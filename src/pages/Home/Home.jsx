@@ -4,7 +4,7 @@ import React from "react";
 const SLIDES = [
   {
     image: "/src/assets/hero/slide1.jpg",
-    title: "ENDING CHILD LABOR",
+    title: "Blood Donation Saves Lives",
     body:
       "With communities, governments, the private sector, and miners, we work to achieve critical mineral supply chains free of child labor.",
     cta: { label: "Learn more", href: "#about" },
@@ -44,7 +44,8 @@ export default function Home() {
 
   return (
     <section
-      className="relative h-[78vh] min-h-[520px] w-full overflow-hidden"
+      // 👇 Fullscreen height (no cropping)
+      className="relative h-screen w-full overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -78,7 +79,7 @@ export default function Home() {
             <div className="mt-6">
               <a
                 href={slide.cta.href}
-                className="inline-flex items-center gap-2 rounded-lg border-2 border-white/80 px-6 py-3 font-semibold text-white hover:bg-white/10"
+                className="inline-flex items-center gap-2 rounded-lg border-2 border-white/80 px-6 py-3 font-semibold text-white hover:bg-white/10 transition"
               >
                 {slide.cta.label}
               </a>

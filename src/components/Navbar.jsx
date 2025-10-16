@@ -1,5 +1,6 @@
 export default function Navbar() {
   const links = [
+    { href: "#home", label: "Home" },
     { href: "#about", label: "ABOUT US" },
     { href: "#programs", label: "Projects" },
     { href: "#stories", label: "Stories" },
@@ -19,7 +20,7 @@ export default function Navbar() {
             className="h-11 w-auto hidden sm:block"
             onError={(e) => { e.currentTarget.style.display = "none"; }}
           />
-          <span className="text-pactPurple font-extrabold text-2xl leading-none">pact</span>
+          <span className="text-pactPurple font-extrabold text-2xl leading-none">Amar Jashore</span>
         </a>
 
         {/* Desktop menu */}
