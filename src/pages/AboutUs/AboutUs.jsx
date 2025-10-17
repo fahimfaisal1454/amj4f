@@ -33,7 +33,6 @@ export default function AboutUs() {
     },
   ];
 
-  // 🔹 Details for Mission / Vision / Values modal
   const mvv = [
     {
       key: "Mission",
@@ -63,7 +62,6 @@ export default function AboutUs() {
     },
   ];
 
-  // 🔹 Modal state for MVV
   const [active, setActive] = React.useState(null);
   React.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setActive(null);
@@ -72,8 +70,20 @@ export default function AboutUs() {
   }, []);
 
   return (
-    <section id="about" className="scroll-mt-[72px] bg-white py-5">
-      <div className="max-w-container mx-auto px-4">
+    <section
+      id="about"
+      className="scroll-mt-[72px] relative overflow-hidden py-5"
+    >
+      {/* 💠 Background gradient – soft purple → white → sky blue */}
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-[#f3e9ff] via-white to-[#d9f3ff]"
+      ></div>
+
+      {/* Subtle texture overlay for depth */}
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.3)_1px,transparent_0)] [background-size:20px_20px]" />
+
+      {/* Content */}
+      <div className="relative max-w-container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-pactPurple">
@@ -90,7 +100,6 @@ export default function AboutUs() {
 
         {/* Intro: image + stats */}
         <div className="grid gap-8 md:grid-cols-2 md:items-center">
-          {/* Image */}
           <div className="relative overflow-hidden rounded-2xl shadow-lg">
             <img
               src={heroImg}
@@ -100,7 +109,6 @@ export default function AboutUs() {
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-transparent" />
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 gap-4">
             {stats.map((s) => (
               <div
@@ -116,85 +124,37 @@ export default function AboutUs() {
           </div>
         </div>
 
-        {/* Mission / Vision / Values — consistent grey panels */}
+        {/* Mission / Vision / Values */}
         <div className="mt-5">
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Card 1 – Mission */}
-            <article
-              className="overflow-hidden rounded-md border border-[#dcd8d3] bg-white cursor-pointer"
-              onClick={() => setActive(mvv[0])}
-            >
-              <img
-                src="/src/assets/mission.jpg"
-                alt="Mission"
-                className="h-56 w-full object-cover"
-              />
-              <div className="bg-[#efeeec] p-5 border-l-8 border-[#d4d0cb]">
-                <span className="inline-block rounded-md bg-pactPurple px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
-                  Mission
-                </span>
-                <h4 className="mt-3 text-[1.15rem] leading-snug font-semibold text-[#2b2b2b]">
-                  Empowering communities through education, health and
-                  livelihoods
-                </h4>
-                <div className="mt-3">
-                  <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
-                    Read more →
+            {mvv.map((item, i) => (
+              <article
+                key={i}
+                className="isolate overflow-hidden rounded-md border border-[#dcd8d3] bg-white cursor-pointer"
+                onClick={() => setActive(item)}
+              >
+                <img
+                  src={item.image}
+                  alt={item.key}
+                  className="block h-56 w-full object-cover"
+                />
+                <div className="bg-[#efeeec] p-5 border-l-8 border-[#d4d0cb]">
+                  <span
+                    className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${item.tagColor}`}
+                  >
+                    {item.key}
                   </span>
+                  <h4 className="mt-3 text-[1.15rem] leading-snug font-semibold text-[#2b2b2b]">
+                    {item.title}
+                  </h4>
+                  <div className="mt-3">
+                    <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
+                      Read more →
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </article>
-
-            {/* Card 2 – Vision */}
-            <article
-              className="overflow-hidden rounded-md border border-[#dcd8d3] bg-white cursor-pointer"
-              onClick={() => setActive(mvv[1])}
-            >
-              <img
-                src="/src/assets/vision.jpg"
-                alt="Vision"
-                className="h-56 w-full object-cover"
-              />
-              <div className="bg-[#efeeec] p-5 border-l-8 border-[#d4d0cb]">
-                <span className="inline-block rounded-md bg-yellow-400 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-black">
-                  Vision
-                </span>
-                <h4 className="mt-3 text-[1.15rem] leading-snug font-semibold text-[#2b2b2b]">
-                  A resilient, inclusive Jashore where everyone can live with
-                  dignity and hope
-                </h4>
-                <div className="mt-3">
-                  <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
-                    Read more →
-                  </span>
-                </div>
-              </div>
-            </article>
-
-            {/* Card 3 – Values */}
-            <article
-              className="overflow-hidden rounded-md border border-[#dcd8d3] bg-white cursor-pointer"
-              onClick={() => setActive(mvv[2])}
-            >
-              <img
-                src="/src/assets/values.jpg"
-                alt="Values"
-                className="h-56 w-full object-cover"
-              />
-              <div className="bg-[#efeeec] p-5 border-l-8 border-[#d4d0cb]">
-                <span className="inline-block rounded-md bg-green-500 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
-                  Values
-                </span>
-                <h4 className="mt-3 text-[1.15rem] leading-snug font-semibold text-[#2b2b2b]">
-                  Integrity, transparency, inclusion and measurable impact
-                </h4>
-                <div className="mt-3">
-                  <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
-                    Read more →
-                  </span>
-                </div>
-              </div>
-            </article>
+              </article>
+            ))}
           </div>
         </div>
 
@@ -264,7 +224,7 @@ export default function AboutUs() {
         </div>
       </div>
 
-      {/* 🔹 MVV Modal */}
+      {/* MVV Modal */}
       {active && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
@@ -276,7 +236,6 @@ export default function AboutUs() {
             className="w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* header image */}
             <div className="relative h-56 w-full">
               <img
                 src={active.image}
@@ -303,7 +262,6 @@ export default function AboutUs() {
               </button>
             </div>
 
-            {/* body */}
             <div className="px-5 py-4">
               <p className="text-[0.95rem] leading-relaxed text-[#363636]">
                 {active.body}
