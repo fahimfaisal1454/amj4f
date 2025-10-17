@@ -1,7 +1,12 @@
+// src/pages/Home.jsx (or wherever this hero lives)
 import React from "react";
 
-// Put your images in /src/assets/hero and update these paths
-const SLIDES = [
+// API base (set in .env: VITE_API_BASE=http://localhost:8000)
+const API = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const url = (p) => (p ? `${API}${p}` : "");
+
+// Fallback slides if API returns nothing (optional)
+const FALLBACK = [
   {
     image: "/src/assets/hero/slide1.jpg",
     title: "Blood Donation Saves Lives",
@@ -26,32 +31,56 @@ const SLIDES = [
 ];
 
 export default function Home() {
+  const [slides, setSlides] = React.useState(FALLBACK);
   const [index, setIndex] = React.useState(0);
   const [paused, setPaused] = React.useState(false);
 
+  // Fetch banners once
+  React.useEffect(() => {
+    fetch(`${API}/api/banners/`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => {
+        if (!Array.isArray(rows) || rows.length === 0) return;
+        // Map server fields -> your UI shape
+        const mapped = rows.map((b) => ({
+          image: url(b.image),            // DRF returns /media/... paths
+          title: b.title,
+          body: b.caption,
+          cta: { label: b.cta_label, href: b.cta_href || "#" },
+        }));
+        setSlides(mapped);
+        setIndex(0);
+      })
+      .catch(() => {
+        // keep FALLBACK on error
+      });
+  }, []);
+
   // autoplay every 6s
   React.useEffect(() => {
-    if (paused) return;
+    if (paused || slides.length === 0) return;
     const id = setInterval(() => {
-      setIndex((i) => (i + 1) % SLIDES.length);
+      setIndex((i) => (i + 1) % slides.length);
     }, 6000);
     return () => clearInterval(id);
-  }, [paused]);
+  }, [paused, slides]);
 
-  const go = (i) => setIndex((i + SLIDES.length) % SLIDES.length);
+  const go = (i) => {
+    if (slides.length === 0) return;
+    setIndex((i + slides.length) % slides.length);
+  };
 
-  const slide = SLIDES[index];
+  const slide = slides[index] || {};
 
   return (
     <section
-      // 👇 Fullscreen height (no cropping)
       className="relative h-screen w-full overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       {/* Slides */}
       <div className="absolute inset-0">
-        {SLIDES.map((s, i) => (
+        {slides.map((s, i) => (
           <img
             key={i}
             src={s.image}
@@ -61,7 +90,6 @@ export default function Home() {
             }`}
           />
         ))}
-        {/* dark gradient for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/10" />
       </div>
 
@@ -72,23 +100,23 @@ export default function Home() {
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight">
               {slide.title}
             </h1>
-            <p className="mt-4 text-white/90 text-lg">
-              {slide.body}
-            </p>
+            <p className="mt-4 text-white/90 text-lg">{slide.body}</p>
 
-            <div className="mt-6">
-              <a
-                href={slide.cta.href}
-                className="inline-flex items-center gap-2 rounded-lg border-2 border-white/80 px-6 py-3 font-semibold text-white hover:bg-white/10 transition"
-              >
-                {slide.cta.label}
-              </a>
-            </div>
+            {slide?.cta?.label && (
+              <div className="mt-6">
+                <a
+                  href={slide.cta.href || "#"}
+                  className="inline-flex items-center gap-2 rounded-lg border-2 border-white/80 px-6 py-3 font-semibold text-white hover:bg-white/10 transition"
+                >
+                  {slide.cta.label}
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Controls (optional) */}
+      {/* Controls */}
       <button
         aria-label="Previous slide"
         onClick={() => go(index - 1)}
@@ -104,9 +132,9 @@ export default function Home() {
         ›
       </button>
 
-      {/* Vertical dots (right) */}
+      {/* Vertical dots */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3">
-        {SLIDES.map((_, i) => (
+        {slides.map((_, i) => (
           <button
             key={i}
             aria-label={`Go to slide ${i + 1}`}

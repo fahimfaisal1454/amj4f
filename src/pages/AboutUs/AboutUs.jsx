@@ -1,85 +1,104 @@
 // src/pages/AboutUs/AboutUs.jsx
 import React from "react";
-import heroImg from "/src/assets/about-hero.jpg"; // swap to your image
+
+// API base (configure in .env: VITE_API_BASE=http://localhost:8000)
+const API = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+
+// helper to prefix /media paths from DRF
+const fileUrl = (p) => (p ? `${API}${p}` : "");
 
 export default function AboutUs() {
-  const stats = [
-    { k: "12+", v: "Active Unions" },
-    { k: "4,800+", v: "Learners Reached" },
-    { k: "3,200+", v: "Patients Served" },
-    { k: "750+", v: "Families Supported" },
-  ];
-
-  const bullets = [
-    {
-      title: "Education Support",
-      text:
-        "Scholarships, after-school tutoring, and school kits so learners can stay and succeed in school.",
-    },
-    {
-      title: "Health & Nutrition",
-      text:
-        "Mobile clinics, maternal care, and community nutrition drives for families in need.",
-    },
-    {
-      title: "Livelihoods",
-      text:
-        "Skills training, micro-grants, and co-ops that help households grow reliable income.",
-    },
-    {
-      title: "Advocacy",
-      text:
-        "Road safety, WASH, and girls’ education campaigns with local leaders and institutions.",
-    },
-  ];
-
-  const mvv = [
-    {
-      key: "Mission",
-      tagColor: "bg-pactPurple text-white",
-      image: "/src/assets/mission.jpg",
-      title:
-        "Empowering communities through education, health and livelihoods",
-      body:
-        "We exist to improve well-being and opportunity for vulnerable families in Jashore. Our mission focuses on equitable access to quality education, essential health services, and resilient livelihoods. We co-create solutions with communities, track what works, and scale efforts that deliver measurable, dignified impact.",
-    },
-    {
-      key: "Vision",
-      tagColor: "bg-yellow-400 text-black",
-      image: "/src/assets/vision.jpg",
-      title:
-        "A resilient, inclusive Jashore where everyone can live with dignity and hope",
-      body:
-        "We envision neighborhoods where children complete school, caregivers can access reliable health care, and households thrive with sustainable income. Systems are responsive, communities are prepared for shocks, and every person has the chance to achieve their potential.",
-    },
-    {
-      key: "Values",
-      tagColor: "bg-green-500 text-white",
-      image: "/src/assets/values.jpg",
-      title: "Integrity, transparency, inclusion and measurable impact",
-      body:
-        "We partner with communities as equals, steward resources responsibly, and publish learnings openly. We center inclusion across gender, disability, and income. We use data to guide decisions and hold ourselves accountable for outcomes, not just activities.",
-    },
-  ];
-
+  // ---- state built FROM backend ----
+  const [about, setAbout] = React.useState(null);
+  const [heroImg, setHeroImg] = React.useState(null);
+  const [stats, setStats] = React.useState([]);
+  const [mvv, setMvv] = React.useState([]);
+  const [bullets, setBullets] = React.useState([]);
+  const [journey, setJourney] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
   const [active, setActive] = React.useState(null);
+
+  // fetch once
+  React.useEffect(() => {
+    fetch(`${API}/api/about/`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data || Object.keys(data).length === 0) return;
+        setAbout(data);
+
+        // hero image
+        setHeroImg(fileUrl(data.image));
+
+        // stats (keep your same shape: {k, v})
+        const s = [1, 2, 3, 4]
+          .map((i) => ({
+            k: data[`stat${i}_number`],
+            v: data[`stat${i}_label`],
+          }))
+          .filter((x) => x.k || x.v);
+        setStats(s);
+
+        // MVV cards (keep your same color scheme & structure)
+        setMvv([
+          {
+            key: "Mission",
+            tagColor: "bg-pactPurple text-white",
+            image: fileUrl(data.mission_image),
+            title: data.mission_title,
+            body: data.mission_description,
+          },
+          {
+            key: "Vision",
+            tagColor: "bg-yellow-400 text-black",
+            image: fileUrl(data.vision_image),
+            title: data.vision_title,
+            body: data.vision_description,
+          },
+          {
+            key: "Values",
+            tagColor: "bg-green-500 text-white",
+            image: fileUrl(data.values_image),
+            title: data.values_title,
+            body: data.values_description,
+          },
+        ]);
+
+        // What We Do items → bullets (title + text)
+        const ww = (data.whatwedo_items || [])
+          .filter((i) => i.is_active !== false)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map((i) => ({ title: i.title, text: i.description }));
+        setBullets(ww);
+
+        // Journey timeline
+        const jr = (data.journey_entries || [])
+          .filter((i) => i.is_active !== false)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map((i) => ({ year: i.year, text: i.text }));
+        setJourney(jr);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // esc closes modal
   React.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setActive(null);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  return (
-    <section
-      id="about"
-      className="scroll-mt-[72px] relative overflow-hidden py-5"
-    >
-      {/* 💠 Background gradient – soft purple → white → sky blue */}
-      <div
-        className="absolute inset-0 bg-gradient-to-br from-[#f3e9ff] via-white to-[#d9f3ff]"
-      ></div>
+  if (loading) {
+    return (
+      <section id="about" className="py-10 text-center">
+        Loading…
+      </section>
+    );
+  }
 
-      {/* Subtle texture overlay for depth */}
+  return (
+    <section id="about" className="scroll-mt-[72px] relative overflow-hidden py-5">
+      {/* background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#f3e9ff] via-white to-[#d9f3ff]" />
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.3)_1px,transparent_0)] [background-size:20px_20px]" />
 
       {/* Content */}
@@ -87,37 +106,32 @@ export default function AboutUs() {
         {/* Header */}
         <div className="mb-8">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-pactPurple">
-            About Us
+            {about?.heading || "About Us"}
           </h2>
           <p className="mt-3 max-w-3xl text-neutral-700">
-            <strong>Amar Jashore</strong> is a community-driven NGO based in
-            Jashore, Bangladesh. We partner with local leaders, schools, and
-            clinics to expand <em>education</em>, improve <em>health</em>, and
-            strengthen <em>livelihoods</em>. Our approach is transparent,
-            data-informed, and centered on dignity and hope.
+            {about?.description}
           </p>
         </div>
 
         {/* Intro: image + stats */}
         <div className="grid gap-8 md:grid-cols-2 md:items-center">
           <div className="relative overflow-hidden rounded-2xl shadow-lg">
-            <img
-              src={heroImg}
-              alt="Community program in Jashore"
-              className="h-full w-full object-cover"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-transparent" />
+            {heroImg && (
+              <>
+                <img
+                  src={heroImg}
+                  alt={about?.heading || "About image"}
+                  className="h-full w-full object-cover"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-transparent" />
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {stats.map((s) => (
-              <div
-                key={s.v}
-                className="rounded-xl bg-pactBg p-6 text-center shadow"
-              >
-                <div className="text-3xl font-extrabold text-pactPurple">
-                  {s.k}
-                </div>
+              <div key={s.v} className="rounded-xl bg-pactBg p-6 text-center shadow">
+                <div className="text-3xl font-extrabold text-pactPurple">{s.k}</div>
                 <div className="mt-1 text-neutral-700 font-medium">{s.v}</div>
               </div>
             ))}
@@ -133,20 +147,24 @@ export default function AboutUs() {
                 className="isolate overflow-hidden rounded-md border border-[#dcd8d3] bg-white cursor-pointer"
                 onClick={() => setActive(item)}
               >
-                <img
-                  src={item.image}
-                  alt={item.key}
-                  className="block h-56 w-full object-cover"
-                />
+                {item.image && (
+                  <img
+                    src={item.image}
+                    alt={item.key}
+                    className="block h-56 w-full object-cover"
+                  />
+                )}
                 <div className="bg-[#efeeec] p-5 border-l-8 border-[#d4d0cb]">
                   <span
                     className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${item.tagColor}`}
                   >
                     {item.key}
                   </span>
-                  <h4 className="mt-3 text-[1.15rem] leading-snug font-semibold text-[#2b2b2b]">
-                    {item.title}
-                  </h4>
+                  {item.title && (
+                    <h4 className="mt-3 text-[1.15rem] leading-snug font-semibold text-[#2b2b2b]">
+                      {item.title}
+                    </h4>
+                  )}
                   <div className="mt-3">
                     <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
                       Read more →
@@ -189,37 +207,30 @@ export default function AboutUs() {
         <div className="mt-12 rounded-2xl bg-pactBg p-6 shadow">
           <h3 className="text-xl font-semibold text-pactPurple">Our Journey</h3>
           <ol className="mt-3 space-y-2 text-neutral-700">
-            <li>
-              <span className="font-semibold">2019:</span> Grassroots tutoring
-              initiative starts in Jashore Sadar.
-            </li>
-            <li>
-              <span className="font-semibold">2021:</span> First free medical
-              camp; 500+ residents served.
-            </li>
-            <li>
-              <span className="font-semibold">2023:</span> Livelihoods pilot
-              expands to three unions.
-            </li>
-            <li>
-              <span className="font-semibold">2025:</span> STEM clubs launched
-              for secondary school girls.
-            </li>
+            {journey.map((j, idx) => (
+              <li key={idx}>
+                <span className="font-semibold">{j.year}:</span> {j.text}
+              </li>
+            ))}
           </ol>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <a
-              href="#programs"
-              className="inline-flex items-center rounded-lg bg-pactPurple px-4 py-2 font-bold text-white hover:opacity-90"
-            >
-              Explore Programs
-            </a>
-            <a
-              href="#contact"
-              className="inline-flex items-center rounded-lg border-2 border-pactPurple px-4 py-2 font-bold text-pactPurple hover:bg-pactPurple/5"
-            >
-              Partner With Us
-            </a>
+            {about?.cta_primary_label && (
+              <a
+                href={about?.cta_primary_href || "#"}
+                className="inline-flex items-center rounded-lg bg-pactPurple px-4 py-2 font-bold text-white hover:opacity-90"
+              >
+                {about.cta_primary_label}
+              </a>
+            )}
+            {about?.cta_secondary_label && (
+              <a
+                href={about?.cta_secondary_href || "#"}
+                className="inline-flex items-center rounded-lg border-2 border-pactPurple px-4 py-2 font-bold text-pactPurple hover:bg-pactPurple/5"
+              >
+                {about.cta_secondary_label}
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -237,11 +248,13 @@ export default function AboutUs() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative h-56 w-full">
-              <img
-                src={active.image}
-                alt={active.key}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
+              {active.image && (
+                <img
+                  src={active.image}
+                  alt={active.key}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
               <div className="absolute bottom-4 left-4 right-4">
                 <span
@@ -249,9 +262,11 @@ export default function AboutUs() {
                 >
                   {active.key}
                 </span>
-                <h3 className="mt-2 text-2xl font-extrabold text-white drop-shadow">
-                  {active.title}
-                </h3>
+                {active.title && (
+                  <h3 className="mt-2 text-2xl font-extrabold text-white drop-shadow">
+                    {active.title}
+                  </h3>
+                )}
               </div>
               <button
                 className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-[#333] hover:bg-white"
@@ -269,8 +284,7 @@ export default function AboutUs() {
 
               <div className="mt-5 flex items-center justify-between">
                 <span className="text-xs text-[#777]">
-                  Press <kbd className="rounded bg-[#eee] px-1 py-[2px]">Esc</kbd> to
-                  close
+                  Press <kbd className="rounded bg-[#eee] px-1 py-[2px]">Esc</kbd> to close
                 </span>
                 <button
                   className="rounded-md bg-pactPurple px-4 py-2 text-sm font-semibold text-white hover:opacity-95"

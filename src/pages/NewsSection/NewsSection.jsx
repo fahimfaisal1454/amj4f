@@ -1,54 +1,41 @@
 // src/Pages/NewsSection/NewsSection.jsx
 import React from "react";
 
-// 4 news items (adjust as needed)
-const items = [
-  {
-    tag: "PACT IN THE NEWS",
-    tagColor: "bg-pactPurple text-white",
-    title:
-      "Is it really a just transition if we don’t talk about supporting artisanal miners?",
-    image: "/src/assets/news/1.jpg",
-    body:
-      "A just transition must include the millions of artisanal and small-scale miners who depend on mining for their livelihoods. This piece explores policy gaps, local realities, and the role of private sector and governments in making supply chains safer and more equitable.",
-  },
-  {
-    tag: "PACT IN THE NEWS",
-    tagColor: "bg-pactPurple text-white",
-    title: "Fixing foreign aid requires confronting fundamental tensions",
-    image: "/src/assets/news/2.jpg",
-    body:
-      "Foreign aid often balances urgency with sustainability, scale with local ownership, and quick wins with systemic change. We break down these tensions and share how community-led approaches are improving outcomes in education, health, and livelihoods.",
-  },
-  {
-    tag: "NEWS",
-    tagColor: "bg-yellow-400 text-black",
-    title:
-      "Pact awarded contract to evaluate American Cancer Society’s Global SPARK Initiative",
-    image: "/src/assets/news/3.jpg",
-    body:
-      "Pact’s evaluation team will support the Global SPARK Initiative with evidence, learning, and adaptive insights to strengthen global efforts around cancer prevention and care—particularly in underserved communities.",
-  },
-  {
-    tag: "BLOG",
-    tagColor: "bg-green-500 text-white",
-    title:
-      "As Ukrainians grapple with war, Pact and partners strengthened vital services for health and mental health",
-    image: "/src/assets/news/4.jpg",
-    body:
-      "Amid conflict, Pact worked with local partners to maintain access to health and mental health services. This blog highlights frontline stories, practical innovations, and the resilience of communities and health workers.",
-  },
-];
+// ✅ If you don’t have .env, just set your backend URL here:
+const API = "http://127.0.0.1:8000"; // <-- change to your domain when you deploy
+const fileUrl = (p) => (p ? `${API}${p}` : "");
+const FALLBACK_IMG = "/src/assets/news/placeholder.jpg";
 
 export default function NewsSection() {
-  // modal state
-  const [active, setActive] = React.useState(null); // stores the clicked item
+  const [items, setItems] = React.useState([]);
+  const [active, setActive] = React.useState(null);
 
-  // close on ESC
+  // Fetch news items from Django
   React.useEffect(() => {
-    function onKey(e) {
-      if (e.key === "Escape") setActive(null);
-    }
+    fetch(`${API}/api/news/`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+
+        const mapped = data
+          .filter((n) => n.is_active)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map((n) => ({
+            tag: n.tag || "NEWS",
+            tagColor: n.tag_color || "bg-pactPurple text-white",
+            title: n.title,
+            image: fileUrl(n.image),
+            body: n.body,
+          }));
+
+        setItems(mapped);
+      })
+      .catch((err) => console.error("Error loading news:", err));
+  }, []);
+
+  // ESC closes modal
+  React.useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && setActive(null);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
@@ -58,7 +45,7 @@ export default function NewsSection() {
       id="news"
       className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pt-10 pb-16 overflow-hidden"
     >
-      {/* 🎨 gradient background with soft blur */}
+      {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center scale-105 blur-[2px] brightness-100"
         style={{
@@ -68,7 +55,7 @@ export default function NewsSection() {
       <div className="absolute inset-0 bg-white/40" />
 
       <div className="relative max-w-container mx-auto px-4">
-        <h2 className="text-center text-pactPurple font-extrabold uppercase tracking-wide text-3xl sm:text-4xl drop-shadow-sm  mb-10">
+        <h2 className="text-center text-pactPurple font-extrabold uppercase tracking-wide text-3xl sm:text-4xl drop-shadow-sm mb-10">
           Latest News and Highlights
         </h2>
 
@@ -79,7 +66,13 @@ export default function NewsSection() {
               onClick={() => setActive(n)}
               className="flex cursor-pointer flex-col overflow-hidden rounded-md border border-[#dcd8d3] bg-white shadow-sm hover:shadow-md transition"
             >
-              <img src={n.image} alt={n.title} className="h-48 w-full object-cover" />
+              {/* ✅ Fixed: Use backend URL + fallback */}
+              <img
+                src={fileUrl(n.image)}
+                alt={n.title}
+                onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
+                className="block h-48 w-full object-cover"
+              />
 
               <div className="flex-1 bg-[#efeeec] px-5 pt-4 pb-6 border-l-8 border-[#d4d0cb]">
                 <span
@@ -92,7 +85,6 @@ export default function NewsSection() {
                   {n.title}
                 </h3>
 
-                {/* Read more */}
                 <div className="mt-3">
                   <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
                     Read more →
@@ -104,7 +96,7 @@ export default function NewsSection() {
         </div>
       </div>
 
-      {/* Modal (details) */}
+      {/* Modal */}
       {active && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
@@ -119,8 +111,9 @@ export default function NewsSection() {
             {/* header image */}
             <div className="relative h-56 w-full">
               <img
-                src={active.image}
+                src={fileUrl(active.image)}
                 alt={active.title}
+                onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
                 className="absolute inset-0 h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
