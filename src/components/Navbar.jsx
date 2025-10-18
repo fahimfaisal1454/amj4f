@@ -15,9 +15,11 @@ export default function Navbar() {
         <a href="#home" aria-label="Home" className="flex items-center gap-2">
           <img
             src="/src/assets/logo.png"
-            alt=""
+            alt="Logo"
             className="h-11 w-auto hidden sm:block"
-            onError={(e) => { e.currentTarget.style.display = "none"; }}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
           />
           <span className="text-pactPurple font-extrabold text-2xl leading-none">
             Amar Jashore
@@ -38,17 +40,27 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Login button (desktop) */}
-          <a
-            href="/login"
-            className="ml-4 inline-flex items-center rounded-full bg-pactPurple px-4 py-2 text-sm font-bold text-white hover:opacity-90"
-            aria-label="Login"
-          >
-            Login
-          </a>
+          {/* Login + Dashboard buttons */}
+          <div className="flex items-center gap-3 ml-4">
+                        <a
+              href="/admin"
+              className="inline-flex items-center rounded-full bg-pactPurpleHover px-4 py-2 text-sm font-bold text-white hover:opacity-90"
+              aria-label="Dashboard"
+            >
+              Dashboard
+            </a>
+            <a
+              href="/login"
+              className="inline-flex items-center rounded-full bg-pactPurple px-4 py-2 text-sm font-bold text-white hover:opacity-90"
+              aria-label="Login"
+            >
+              Login
+            </a>
+
+          </div>
         </div>
 
-        {/* Mobile: wrap links + login pill */}
+        {/* Mobile */}
         <div className="md:hidden flex items-center gap-3 max-w-[70%] justify-end flex-wrap">
           <nav className="flex flex-wrap justify-end gap-3">
             {links.map(({ href, label }) => (
@@ -62,14 +74,24 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Login button (mobile) */}
-          <a
-            href="/login"
-            className="inline-flex items-center rounded-full bg-pactPurple px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
-            aria-label="Login"
-          >
-            Login
-          </a>
+          {/* Mobile Login + Dashboard */}
+          <div className="flex gap-2 mt-2">
+                        <a
+              href="/admin"
+              className="inline-flex items-center rounded-full bg-pactPurpleHover px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+              aria-label="Dashboard"
+            >
+              Dashboard
+            </a>
+            <a
+              href="/login"
+              className="inline-flex items-center rounded-full bg-pactPurple px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+              aria-label="Login"
+            >
+              Login
+            </a>
+
+          </div>
         </div>
       </div>
     </header>

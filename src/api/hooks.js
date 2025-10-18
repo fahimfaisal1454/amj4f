@@ -24,21 +24,25 @@ export function useApiQuery(url, deps = []) {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
 
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await api.get(url);
+      setData(res.data);
+    } catch (err) {
+      setError(err?.message || "Failed");
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
+
+  // initial load
   React.useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    setError("");
-    api
-      .get(url)
-      .then((res) => alive && setData(res.data))
-      .catch((err) => alive && setError(err?.message || "Failed"))
-      .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
+    fetchData();
   }, deps); // eslint-disable-line
 
-  return { data, loading, error, refetch: () => {} };
+  return { data, loading, error, refetch: fetchData };
 }
 
 export function useApiMutation() {

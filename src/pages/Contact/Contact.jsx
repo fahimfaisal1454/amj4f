@@ -127,7 +127,7 @@ export default function Contact() {
   return (
     <section
       id="contact"
-      className="scroll-mt-[72px] relative overflow-hidden py-5 text-gray-900"
+      className="scroll-mt-[72px] relative overflow-hidden py-1 text-gray-900"
     >
       {/* Background matching site theme */}
       <div

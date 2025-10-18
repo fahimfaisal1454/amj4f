@@ -1,33 +1,11 @@
-// src/pages/Home.jsx (or wherever this hero lives)
+// src/pages/Home.jsx
 import React from "react";
-
-// API base (set in .env: VITE_API_BASE=http://localhost:8000)
 const API = import.meta.env.VITE_API_BASE || "http://localhost:8000";
-const url = (p) => (p ? `${API}${p}` : "");
 
-// Fallback slides if API returns nothing (optional)
 const FALLBACK = [
-  {
-    image: "/src/assets/hero/slide1.jpg",
-    title: "Blood Donation Saves Lives",
-    body:
-      "With communities, governments, the private sector, and miners, we work to achieve critical mineral supply chains free of child labor.",
-    cta: { label: "Learn more", href: "#about" },
-  },
-  {
-    image: "/src/assets/hero/slide2.jpg",
-    title: "EDUCATION CHANGES LIVES",
-    body:
-      "Scholarships, tutoring, and school kits keep children in school and open doors for their future.",
-    cta: { label: "Explore programs", href: "#programs" },
-  },
-  {
-    image: "/src/assets/hero/slide3.jpg",
-    title: "HEALTH & NUTRITION",
-    body:
-      "Mobile clinics and nutrition programs ensure families get timely care and support.",
-    cta: { label: "See our results", href: "#stories" },
-  },
+  { image: "/src/assets/hero/slide1.jpg", title: "Blood Donation Saves Lives", body: "…", cta:{label:"Learn more", href:"#about"} },
+  { image: "/src/assets/hero/slide2.jpg", title: "EDUCATION CHANGES LIVES", body: "…", cta:{label:"Explore programs", href:"#programs"} },
+  { image: "/src/assets/hero/slide3.jpg", title: "HEALTH & NUTRITION", body: "…", cta:{label:"See our results", href:"#stories"} },
 ];
 
 export default function Home() {
@@ -35,41 +13,39 @@ export default function Home() {
   const [index, setIndex] = React.useState(0);
   const [paused, setPaused] = React.useState(false);
 
-  // Fetch banners once
   React.useEffect(() => {
-    fetch(`${API}/api/banners/`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows) => {
-        if (!Array.isArray(rows) || rows.length === 0) return;
-        // Map server fields -> your UI shape
+    (async () => {
+      try {
+        const r = await fetch(`${API}/api/banners/`);
+        if (!r.ok) return;
+        const json = await r.json();
+
+        // ← normalize array vs paginated shape
+        const rows = Array.isArray(json) ? json : (json?.results || []);
+
+        if (!rows.length) return;
+
         const mapped = rows.map((b) => ({
-          image: url(b.image),            // DRF returns /media/... paths
+          image: b.image_url || b.image,                    // absolute URL from serializer
+          mobile: b.mobile_image_url || b.mobile_image,     // optional
           title: b.title,
           body: b.caption,
           cta: { label: b.cta_label, href: b.cta_href || "#" },
         }));
+
         setSlides(mapped);
         setIndex(0);
-      })
-      .catch(() => {
-        // keep FALLBACK on error
-      });
+      } catch {}
+    })();
   }, []);
 
-  // autoplay every 6s
   React.useEffect(() => {
     if (paused || slides.length === 0) return;
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
-    }, 6000);
+    const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), 6000);
     return () => clearInterval(id);
   }, [paused, slides]);
 
-  const go = (i) => {
-    if (slides.length === 0) return;
-    setIndex((i + slides.length) % slides.length);
-  };
-
+  const go = (i) => slides.length && setIndex((i + slides.length) % slides.length);
   const slide = slides[index] || {};
 
   return (
@@ -93,15 +69,12 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/10" />
       </div>
 
-      {/* Content (left) */}
+      {/* Content */}
       <div className="relative z-10 mx-auto h-full max-w-container px-4">
         <div className="flex h-full items-center">
           <div className="max-w-xl text-white">
-            <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight">
-              {slide.title}
-            </h1>
+            <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight">{slide.title}</h1>
             <p className="mt-4 text-white/90 text-lg">{slide.body}</p>
-
             {slide?.cta?.label && (
               <div className="mt-6">
                 <a
@@ -132,7 +105,7 @@ export default function Home() {
         ›
       </button>
 
-      {/* Vertical dots */}
+      {/* Dots */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3">
         {slides.map((_, i) => (
           <button
