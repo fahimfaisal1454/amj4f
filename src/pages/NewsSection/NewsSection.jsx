@@ -5,6 +5,10 @@ import React from "react";
 const API_BASE = "http://127.0.0.1:8000";
 const fileUrl = (p) => (!p ? "" : p.startsWith("http") ? p : `${API_BASE}${p}`);
 
+// THEME
+const HIGHLIGHT = "#C5FB5A";
+const PAGE_BG = "bg-gradient-to-br from-lime-200 via-lime-100 to-black/80";
+
 export default function NewsSection() {
   const [items, setItems] = React.useState([]);
   const [active, setActive] = React.useState(null);
@@ -19,7 +23,8 @@ export default function NewsSection() {
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           .map((n) => ({
             tag: n.tag || "NEWS",
-            tagColor: n.tag_color || "bg-pactPurple text-white",
+            // default tag style aligned to theme
+            tagColor: n.tag_color || "bg-[#C5FB5A] text-black",
             title: n.title,
             body: n.body,
             image: fileUrl(n.image),
@@ -38,31 +43,26 @@ export default function NewsSection() {
   return (
     <section
       id="news"
-      className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pt-10 pb-16 overflow-hidden"
+      className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pt-12 pb-20 overflow-hidden"
     >
-      {/* Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center scale-105 blur-[2px] brightness-100"
-        style={{
-          backgroundImage: "url('/src/assets/backgrounds/background3.jpg')",
-        }}
-      />
-      <div className="absolute inset-0 bg-white/40" />
+      {/* Themed background */}
+      <div className={`absolute inset-0 ${PAGE_BG}`} />
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.35)_1px,transparent_0)] [background-size:18px_18px]" />
 
       <div className="relative max-w-container mx-auto px-4">
-        <h2 className="text-center text-pactPurple font-extrabold uppercase tracking-wide text-3xl sm:text-4xl drop-shadow-sm mb-10">
+        <h2 className="text-center text-black font-extrabold uppercase tracking-wide text-3xl sm:text-4xl drop-shadow-sm mb-10">
           Latest News and Highlights
         </h2>
 
         {items.length === 0 ? (
-          <p className="text-center text-gray-500">No news available.</p>
+          <p className="text-center text-black/70">No news available.</p>
         ) : (
           <div className="mt-8 grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
             {items.map((n, i) => (
               <article
                 key={i}
                 onClick={() => setActive(n)}
-                className="flex cursor-pointer flex-col overflow-hidden rounded-md border border-[#dcd8d3] bg-white shadow-sm hover:shadow-md transition"
+                className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-black/10 bg-white/95 backdrop-blur-sm shadow-[0_12px_30px_rgba(0,0,0,0.18)] hover:shadow-[0_18px_45px_rgba(0,0,0,0.28)] hover:-translate-y-1 transition-all"
               >
                 <img
                   src={n.image}
@@ -70,17 +70,17 @@ export default function NewsSection() {
                   className="h-48 w-full object-cover"
                   onError={(e) => (e.currentTarget.src = "/src/assets/news/placeholder.jpg")}
                 />
-                <div className="flex-1 bg-[#efeeec] px-5 pt-4 pb-6 border-l-8 border-[#d4d0cb]">
+                <div className="flex-1 px-5 pt-4 pb-6 border-t border-black/10 bg-white/95">
                   <span
-                    className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${n.tagColor}`}
+                    className={`inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${n.tagColor}`}
                   >
                     {n.tag}
                   </span>
-                  <h3 className="mt-3 text-[1.05rem] leading-snug font-semibold text-[#2b2b2b]">
+                  <h3 className="mt-3 text-[1.05rem] leading-snug font-semibold text-black">
                     {n.title}
                   </h3>
                   <div className="mt-3">
-                    <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
+                    <span className="inline-flex items-center text-sm font-semibold text-black/85 hover:underline">
                       Read more →
                     </span>
                   </div>
@@ -94,7 +94,7 @@ export default function NewsSection() {
       {/* Modal */}
       {active && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
           onClick={() => setActive(null)}
           role="dialog"
           aria-modal="true"
@@ -108,11 +108,12 @@ export default function NewsSection() {
                 src={active.image}
                 alt={active.title}
                 className="absolute inset-0 h-full w-full object-cover"
+                onError={(e) => (e.currentTarget.src = "/src/assets/news/placeholder.jpg")}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
               <div className="absolute bottom-4 left-4 right-4">
                 <span
-                  className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${active.tagColor}`}
+                  className={`inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${active.tagColor}`}
                 >
                   {active.tag}
                 </span>
@@ -134,10 +135,19 @@ export default function NewsSection() {
               </p>
               <div className="mt-5 flex items-center justify-between">
                 <span className="text-xs text-[#777]">
-                  Tap <kbd className="rounded bg-[#eee] px-1 py-[2px]">Esc</kbd> to close
+                  Press <kbd className="rounded bg-[#eee] px-1 py-[2px]">Esc</kbd> to close
                 </span>
                 <button
-                  className="rounded-md bg-pactPurple px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
+                  className="rounded-full px-4 py-2 text-sm font-semibold transition shadow-[0_6px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)]"
+                  style={{ backgroundColor: HIGHLIGHT, color: "black" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "black";
+                    e.currentTarget.style.color = HIGHLIGHT;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = HIGHLIGHT;
+                    e.currentTarget.style.color = "black";
+                  }}
                   onClick={() => setActive(null)}
                 >
                   Close

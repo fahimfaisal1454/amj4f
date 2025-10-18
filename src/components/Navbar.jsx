@@ -3,16 +3,16 @@ import React from "react";
 
 export default function Navbar() {
   const links = [
-    { href: "#home", label: "Home" },
-    { href: "#about", label: "ABOUT US" },
-    { href: "#programs", label: "Projects" },
-    { href: "#stories", label: "Stories" },
-    { href: "#news", label: "News" },
-    { href: "#contact", label: "Contacts" },
+    { href: "/#home", label: "Home" },
+    { href: "/#about", label: "ABOUT US" },
+    { href: "/#programs", label: "Projects" },
+    { href: "/#stories", label: "Stories" },
+    { href: "/#news", label: "News" },
+    { href: "/#contact", label: "Contacts" },
   ];
 
-  // Solid background after scrolling a bit (e.g. 40px)
   const [solid, setSolid] = React.useState(false);
+
   React.useEffect(() => {
     const onScroll = () => setSolid(window.scrollY > 40);
     onScroll();
@@ -22,57 +22,54 @@ export default function Navbar() {
 
   return (
     <header
-      // fixed over hero, translucent; becomes more solid after scroll
       className={[
-        "fixed top-0 inset-x-0 z-50 h-nav transition-colors",
-        "border-b",
+        "fixed inset-x-0 top-0 z-50 h-16 transition-colors border-b",
         solid
-          ? "bg-white/85 backdrop-blur-md border-white/60"
-          : "bg-white/25 backdrop-blur-md border-white/30",
+          ? "bg-gradient-to-r from-lime-300 to-black border-lime-200"
+          : "bg-gradient-to-r from-lime-200/60 to-black/60 backdrop-blur-md border-lime-100/40",
       ].join(" ")}
     >
-      <div className="max-w-container mx-auto h-full flex items-center justify-between px-4">
+      <div className="max-w-container mx-auto h-full px-4 flex items-center justify-between">
         {/* Logo */}
         <a href="#home" aria-label="Home" className="flex items-center gap-2">
           <img
             src="/src/assets/logo.png"
             alt="Logo"
-            className="h-11 w-auto hidden sm:block"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
+            className="h-9 w-auto hidden sm:block"
+            onError={(e) => (e.currentTarget.style.display = "none")}
           />
-          <span className="text-pactPurple font-extrabold text-2xl leading-none">
+          <span className="text-black font-extrabold text-xl leading-none">
             Amar Jashore
           </span>
         </a>
 
         {/* Desktop menu */}
-        <div className="hidden md:flex items-center gap-9">
-          <nav className="flex items-center gap-9">
+        <div className="hidden md:flex items-center gap-6">
+          {/* ONE slim pill behind all links, using your Dashboard color */}
+          <nav className="flex items-center gap-5 rounded-full bg-[#C5FB5A] px-5 py-1 shadow">
             {links.map(({ href, label }) => (
               <a
                 key={href}
                 href={href}
-                className="text-pactPurple font-extrabold uppercase tracking-wide text-[1.05rem] border-b-2 border-transparent hover:text-pactPurpleHover hover:border-pactPurpleHover transition-colors"
+                className="text-black font-extrabold uppercase tracking-wide text-[0.95rem] px-2 py-1 rounded-full hover:bg-black hover:text-[#C5FB5A] transition-colors"
               >
                 {label}
               </a>
             ))}
           </nav>
 
-          {/* Login + Dashboard */}
-          <div className="flex items-center gap-3 ml-4">
+          {/* Buttons (tight pills) */}
+          <div className="flex items-center gap-2">
             <a
               href="/admin"
-              className="inline-flex items-center rounded-full bg-pactPurpleHover px-4 py-2 text-sm font-bold text-white hover:opacity-90"
+              className="inline-flex items-center rounded-full bg-[#C5FB5A] px-3 py-1 text-xs font-bold text-black hover:bg-black hover:text-[#C5FB5A] transition-colors shadow"
               aria-label="Dashboard"
             >
               Dashboard
             </a>
             <a
               href="/login"
-              className="inline-flex items-center rounded-full bg-pactPurple px-4 py-2 text-sm font-bold text-white hover:opacity-90"
+              className="inline-flex items-center rounded-full bg-black px-3 py-1 text-xs font-bold text-[#C5FB5A] hover:bg-[#C5FB5A] hover:text-black transition-colors"
               aria-label="Login"
             >
               Login
@@ -81,34 +78,21 @@ export default function Navbar() {
         </div>
 
         {/* Mobile */}
-        <div className="md:hidden flex items-center gap-3 max-w-[70%] justify-end flex-wrap">
-          <nav className="flex flex-wrap justify-end gap-3">
-            {links.map(({ href, label }) => (
-              <a
-                key={href}
-                href={href}
-                className="text-pactPurple text-sm font-extrabold uppercase tracking-wide"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-          <div className="flex gap-2 mt-2">
-            <a
-              href="/admin"
-              className="inline-flex items-center rounded-full bg-pactPurpleHover px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
-              aria-label="Dashboard"
-            >
-              Dashboard
-            </a>
-            <a
-              href="/login"
-              className="inline-flex items-center rounded-full bg-pactPurple px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
-              aria-label="Login"
-            >
-              Login
-            </a>
-          </div>
+        <div className="md:hidden flex items-center gap-2">
+          <a
+            href="/login"
+            className="inline-flex items-center rounded-full bg-black px-3 py-1 text-xs font-bold text-[#C5FB5A]"
+            aria-label="Login"
+          >
+            Login
+          </a>
+          <a
+            href="/admin"
+            className="inline-flex items-center rounded-full bg-[#C5FB5A] px-3 py-1 text-xs font-bold text-black"
+            aria-label="Dashboard"
+          >
+            Dashboard
+          </a>
         </div>
       </div>
     </header>

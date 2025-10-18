@@ -4,10 +4,14 @@ import React from "react";
 // Works with or without .env (VITE_API_BASE=http://127.0.0.1:8000)
 const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
 const fileUrl = (p) => (p ? (p.startsWith("http") ? p : `${API}${p}`) : "");
-const FALLBACK = "/src/assets/news/placeholder.jpg"; // optional
+const FALLBACK = "/src/assets/news/placeholder.jpg";
+
+// THEME
+const HIGHLIGHT = "#C5FB5A";
+const PAGE_BG = "bg-gradient-to-br from-lime-200 via-lime-100 to-black/80";
 
 export default function StoriesStrip() {
-  const [items, setItems] = React.useState([]); // replaces STORIES
+  const [items, setItems] = React.useState([]);
   const [active, setActive] = React.useState(null);
 
   // fetch stories once
@@ -20,7 +24,10 @@ export default function StoriesStrip() {
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           .map((s) => ({
             tag: s.tag || "STORY",
-            tagColor: s.tag_color?.trim() || "bg-pactPurple text-white",
+            // default to lime chip; allow backend override if provided
+            tagColor: (s.tag_color?.trim() || "").length
+              ? s.tag_color
+              : "bg-[#C5FB5A] text-black",
             title: s.title,
             desc: s.desc,
             body: s.body,
@@ -32,7 +39,7 @@ export default function StoriesStrip() {
       .catch(() => setItems([]));
   }, []);
 
-  // close on ESC (unchanged)
+  // close on ESC
   React.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setActive(null);
     window.addEventListener("keydown", onKey);
@@ -42,19 +49,15 @@ export default function StoriesStrip() {
   return (
     <section
       id="stories"
-      className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pt-10 pb-16 overflow-hidden"
+      className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pt-12 pb-20 overflow-hidden"
     >
-      {/* Background image with light blur */}
-      <div
-        className="absolute inset-0 bg-cover bg-center scale-105 blur-[3px] brightness-95"
-        style={{ backgroundImage: "url('/src/assets/backgrounds/blue-gradient.jpg')" }}
-      />
-      {/* Soft veil for readability */}
-      <div className="absolute inset-0 bg-white/30" />
+      {/* Themed background */}
+      <div className={`absolute inset-0 ${PAGE_BG}`} />
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.35)_1px,transparent_0)] [background-size:18px_18px]" />
 
       {/* Content */}
       <div className="relative max-w-container mx-auto px-4">
-        <h2 className="text-center text-pactPurple font-extrabold uppercase tracking-wide text-3xl sm:text-4xl drop-shadow-sm">
+        <h2 className="text-center text-black font-extrabold uppercase tracking-wide text-3xl sm:text-4xl drop-shadow-sm">
           Impact Stories
         </h2>
 
@@ -63,7 +66,7 @@ export default function StoriesStrip() {
             <article
               key={`${s.title}-${i}`}
               onClick={() => setActive(s)}
-              className="flex cursor-pointer flex-col overflow-hidden rounded-md border border-[#dcd8d3] bg-white shadow-sm hover:shadow-md transition"
+              className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-black/10 bg-white/95 backdrop-blur-sm shadow-[0_12px_30px_rgba(0,0,0,0.18)] hover:shadow-[0_18px_45px_rgba(0,0,0,0.28)] hover:-translate-y-1 transition-all"
             >
               <img
                 src={s.image}
@@ -71,16 +74,16 @@ export default function StoriesStrip() {
                 className="h-48 w-full object-cover"
                 onError={(e) => (e.currentTarget.src = FALLBACK)}
               />
-              <div className="flex-1 bg-[#efeeec] px-5 pt-4 pb-6 border-l-8 border-[#d4d0cb]">
+              <div className="flex-1 px-5 pt-4 pb-6 border-t border-black/10 bg-white/95">
                 <span
-                  className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${s.tagColor}`}
+                  className={`inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${s.tagColor}`}
                 >
                   {s.tag}
                 </span>
-                <h3 className="mt-3 text-[1.1rem] leading-snug font-semibold text-[#2b2b2b]">
+                <h3 className="mt-3 text-[1.1rem] leading-snug font-semibold text-black">
                   {s.title}
                 </h3>
-                <p className="mt-2 text-[0.95rem] text-[#444] leading-relaxed">
+                <p className="mt-2 text-[0.95rem] text-neutral-800 leading-relaxed">
                   {s.desc}
                 </p>
                 {/* keep the link, but intercept to open modal */}
@@ -90,7 +93,7 @@ export default function StoriesStrip() {
                     e.preventDefault();
                     setActive(s);
                   }}
-                  className="mt-3 inline-flex font-semibold text-pactPurple hover:underline"
+                  className="mt-3 inline-flex font-semibold text-black/85 hover:underline"
                 >
                   Read story →
                 </a>
@@ -103,7 +106,7 @@ export default function StoriesStrip() {
       {/* Modal (details) */}
       {active && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
           onClick={() => setActive(null)}
           role="dialog"
           aria-modal="true"
@@ -120,10 +123,10 @@ export default function StoriesStrip() {
                 className="absolute inset-0 h-full w-full object-cover"
                 onError={(e) => (e.currentTarget.src = FALLBACK)}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
               <div className="absolute bottom-4 left-4 right-4">
                 <span
-                  className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${active.tagColor}`}
+                  className={`inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${active.tagColor}`}
                 >
                   {active.tag}
                 </span>
@@ -152,8 +155,20 @@ export default function StoriesStrip() {
                 </span>
                 <a
                   href={active.href || "#"}
-                  onClick={(e) => e.preventDefault()}
-                  className="rounded-md bg-pactPurple px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setActive(null);
+                  }}
+                  className="rounded-full px-4 py-2 text-sm font-semibold transition shadow-[0_6px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)]"
+                  style={{ backgroundColor: HIGHLIGHT, color: "black" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "black";
+                    e.currentTarget.style.color = HIGHLIGHT;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = HIGHLIGHT;
+                    e.currentTarget.style.color = "black";
+                  }}
                 >
                   Close
                 </a>
