@@ -2,25 +2,12 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
-import { ENDPOINTS } from "../api/endpoints";
+import { ENDPOINTS, ABS } from "../api/endpoints";
 
 /* ============================== helpers ============================== */
 
-function buildUrl(basePath, id) {
-  if (!basePath) throw new Error("Missing basePath");
-  const isAbs = /^https?:\/\//i.test(basePath);
-  const trimmed = String(basePath).replace(/\/+$/, "");
-  const path = id ? `${trimmed}/${id}/` : `${trimmed}/`;
-  if (isAbs) return path;
-  const base = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
-  return `${base}${path}`;
-}
-
-function fileUrl(p) {
-  const base = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
-  if (!p) return "";
-  return /^https?:\/\//i.test(p) ? p : `${base}${p}`;
-}
+// Absolute for <img src>
+const fileUrl = (p) => (!p ? "" : ABS(p));
 
 function getAccessToken() {
   try {
@@ -36,7 +23,8 @@ function getAccessToken() {
 function authHeaders({ isForm = false } = {}) {
   const token = getAccessToken();
   const h = {};
-  if (token) h["Authorization"] = `Bearer ${token}`;
+  if (token) h.Authorization = `Bearer ${token}`;
+  // Do NOT set Content-Type for FormData
   if (!isForm) h["Content-Type"] = "application/json";
   return h;
 }
@@ -54,11 +42,27 @@ async function parseError(res) {
   }
 }
 
+/** If editing with PUT and no new image chosen, fetch existing image and attach as File */
+async function fetchExistingImageFile(imagePathOrUrl) {
+  if (!imagePathOrUrl) return null;
+  const url = ABS(imagePathOrUrl);
+  const resp = await fetch(url, { credentials: "include" });
+  if (!resp.ok) return null;
+  const blob = await resp.blob();
+  const name =
+    url.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() ||
+    "image.jpg";
+  return new File([blob], name, { type: blob.type || "image/jpeg" });
+}
+
 /* ============================== main ============================== */
 
 export default function ProgramsAdmin() {
   const { data, loading, error, refetch } = useApiQuery(ENDPOINTS.programs, []);
-  const items = useMemo(() => (Array.isArray(data) ? data : data?.results ?? []), [data]);
+  const items = useMemo(
+    () => (Array.isArray(data) ? data : data?.results ?? []),
+    [data]
+  );
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -84,7 +88,7 @@ export default function ProgramsAdmin() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this program?")) return;
     try {
-      const url = buildUrl(ENDPOINTS.programsManage, id);
+      const url = ABS(`${ENDPOINTS.programsManage}${id}/`); // /api/programs/manage/<id>/
       const res = await fetch(url, {
         method: "DELETE",
         headers: authHeaders(),
@@ -102,12 +106,29 @@ export default function ProgramsAdmin() {
     setSubmitError("");
     try {
       const isEdit = Boolean(editing?.id);
-      const url = buildUrl(ENDPOINTS.programsManage, isEdit ? editing.id : undefined);
+
+      // Correct URLs (DRF expects trailing slash)
+      const url = isEdit
+        ? ABS(`${ENDPOINTS.programsManage}${editing.id}/`)
+        : ABS(ENDPOINTS.programsManage);
 
       const body = new FormData();
       Object.entries(payload).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== "") body.append(k, v);
       });
+
+      // Require image on CREATE if your model needs it
+      if (!isEdit && !payload.image) {
+        setSubmitError("Please select an image.");
+        setSaving(false);
+        return;
+      }
+
+      // For PUT when no new image chosen, reuse the existing image
+      if (isEdit && !payload.image && editing?.image) {
+        const existingFile = await fetchExistingImageFile(editing.image);
+        if (existingFile) body.append("image", existingFile);
+      }
 
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
@@ -116,6 +137,7 @@ export default function ProgramsAdmin() {
         credentials: "include",
       });
       if (!res.ok) throw await parseError(res);
+
       closeModal();
       await refetch();
     } catch (e) {
@@ -143,7 +165,8 @@ export default function ProgramsAdmin() {
       {!loading && !error && (
         items.length === 0 ? (
           <div className="rounded border bg-white p-6 text-gray-600">
-            No programs yet. Click <span className="font-semibold">“New Program”</span> to create one.
+            No programs yet. Click{" "}
+            <span className="font-semibold">“New Program”</span> to create one.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -180,7 +203,11 @@ function ProgramCard({ program, onEdit, onDelete }) {
   return (
     <div className="rounded border bg-white shadow-sm overflow-hidden">
       {imageUrl ? (
-        <img src={imageUrl} alt={program.title || ""} className="h-40 w-full object-cover" />
+        <img
+          src={imageUrl}
+          alt={program.title || ""}
+          className="h-40 w-full object-cover"
+        />
       ) : (
         <div className="h-40 w-full bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
           No image
@@ -189,7 +216,9 @@ function ProgramCard({ program, onEdit, onDelete }) {
 
       <div className="p-3">
         <div className="font-semibold">{program.title || "Untitled"}</div>
-        <div className="text-sm text-gray-500">{program.desc || "No description"}</div>
+        <div className="text-sm text-gray-500">
+          {program.desc || "No description"}
+        </div>
         <div className="text-xs mt-1">
           {program.is_active ? (
             <span className="text-green-600 font-semibold">Active</span>
@@ -252,12 +281,21 @@ function ProgramModal({ initial, onClose, onSubmit, saving, error }) {
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl max-h-[80vh] overflow-y-auto">
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between border-b px-5 py-3">
-          <h2 className="text-lg font-semibold">{isEdit ? "Edit Program" : "New Program"}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <h2 className="text-lg font-semibold">
+            {isEdit ? "Edit Program" : "New Program"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-5">
-          {error && <div className="rounded bg-red-50 p-3 text-red-700">{error}</div>}
+          {error && (
+            <div className="rounded bg-red-50 p-3 text-red-700">{error}</div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div>
@@ -285,7 +323,9 @@ function ProgramModal({ initial, onClose, onSubmit, saving, error }) {
             </div>
 
             <div className="lg:col-span-2">
-              <label className="block text-sm font-medium mb-1">Description</label>
+              <label className="block text-sm font-medium mb-1">
+                Description
+              </label>
               <textarea
                 className="w-full rounded border px-3 py-2 min-h-[100px]"
                 value={desc}
@@ -309,18 +349,33 @@ function ProgramModal({ initial, onClose, onSubmit, saving, error }) {
 
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium mb-1">Upload Image</label>
-                <input ref={fileRef} type="file" accept="image/*" className="block w-full text-sm" />
-                <p className="text-xs text-gray-500 mt-1">PNG/JPG. Recommended width ≥ 1600px.</p>
+                <label className="block text-sm font-medium mb-1">
+                  Upload Image
+                </label>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  PNG/JPG. Recommended width ≥ 1600px.
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">Preview</label>
                 <div className="h-32 rounded border bg-gray-50 flex items-center justify-center overflow-hidden">
                   {previewUrl ? (
-                    <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={previewUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
-                    <span className="text-gray-400 text-sm">No image selected</span>
+                    <span className="text-gray-400 text-sm">
+                      No image selected
+                    </span>
                   )}
                 </div>
               </div>

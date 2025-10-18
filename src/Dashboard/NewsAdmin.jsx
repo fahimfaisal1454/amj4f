@@ -2,27 +2,12 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
-import { ENDPOINTS } from "../api/endpoints";
+import { ENDPOINTS, ABS } from "../api/endpoints";
 
 /* ============================== helpers ============================== */
 
-// Absolute URL builder for write endpoints (handles relative or absolute)
-function buildUrl(basePath, id) {
-  if (!basePath) throw new Error("Missing basePath");
-  const isAbs = /^https?:\/\//i.test(basePath);
-  const trimmed = String(basePath).replace(/\/+$/, "");
-  const path = id ? `${trimmed}/${id}/` : `${trimmed}/`;
-  if (isAbs) return path;
-  const base = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
-  return `${base}${path}`;
-}
-
-// For <img src>, turn /media/... into absolute
-const fileUrl = (p) => {
-  const apiBase = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
-  if (!p) return "";
-  return /^https?:\/\//i.test(p) ? p : `${apiBase}${p}`;
-};
+// Turn /media/... into absolute for <img src>
+const fileUrl = (p) => (!p ? "" : ABS(p));
 
 // JWT helpers (reads from localStorage using VITE_TOKEN_STORAGE_KEY or "aj_tokens")
 function getAccessToken() {
@@ -39,7 +24,8 @@ function getAccessToken() {
 function authHeaders({ isForm = false } = {}) {
   const token = getAccessToken();
   const h = {};
-  if (token) h["Authorization"] = `Bearer ${token}`;
+  if (token) h.Authorization = `Bearer ${token}`;
+  // IMPORTANT: don't set Content-Type for FormData
   if (!isForm) h["Content-Type"] = "application/json";
   return h;
 }
@@ -59,12 +45,28 @@ async function parseError(res) {
   }
 }
 
+/** If editing with PUT and no new image chosen, fetch the existing image and attach as a File */
+async function fetchExistingImageFile(imagePathOrUrl) {
+  if (!imagePathOrUrl) return null;
+  const url = ABS(imagePathOrUrl);
+  const resp = await fetch(url, { credentials: "include" });
+  if (!resp.ok) return null;
+  const blob = await resp.blob();
+  const name =
+    url.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() ||
+    "image.jpg";
+  return new File([blob], name, { type: blob.type || "image/jpeg" });
+}
+
 /* ============================== main ============================== */
 
 export default function NewsAdmin() {
   // GET uses read-only list
   const { data, loading, error, refetch } = useApiQuery(ENDPOINTS.news, []);
-  const items = useMemo(() => (Array.isArray(data) ? data : data?.results ?? []), [data]);
+  const items = useMemo(
+    () => (Array.isArray(data) ? data : data?.results ?? []),
+    [data]
+  );
 
   // UI state
   const [showModal, setShowModal] = useState(false);
@@ -92,7 +94,7 @@ export default function NewsAdmin() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this news item?")) return;
     try {
-      const url = buildUrl(ENDPOINTS.newsManage, id);
+      const url = ABS(`${ENDPOINTS.newsManage}${id}/`); // /api/news/manage/<id>/
       const res = await fetch(url, {
         method: "DELETE",
         headers: authHeaders(),
@@ -111,16 +113,34 @@ export default function NewsAdmin() {
     setSubmitError("");
     try {
       const isEdit = Boolean(editing?.id);
-      const url = buildUrl(ENDPOINTS.newsManage, isEdit ? editing.id : undefined);
 
+      // Correct URLs (DRF expects trailing slash)
+      const url = isEdit
+        ? ABS(`${ENDPOINTS.newsManage}${editing.id}/`)
+        : ABS(ENDPOINTS.newsManage);
+
+      // Build multipart body
       const body = new FormData();
       Object.entries(payload).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== "") body.append(k, v);
       });
 
+      // Require image on CREATE (model typically needs it)
+      if (!isEdit && !payload.image) {
+        setSubmitError("Please select an image.");
+        setSaving(false);
+        return;
+      }
+
+      // If PUT and no new image chosen, attach existing image file
+      if (isEdit && !payload.image && editing?.image) {
+        const existingFile = await fetchExistingImageFile(editing.image);
+        if (existingFile) body.append("image", existingFile);
+      }
+
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
-        headers: authHeaders({ isForm: true }), // adds Authorization, omits Content-Type for FormData
+        headers: authHeaders({ isForm: true }), // Authorization only
         body,
         credentials: "include",
       });
@@ -153,7 +173,8 @@ export default function NewsAdmin() {
       {!loading && !error && (
         items.length === 0 ? (
           <div className="rounded border bg-white p-6 text-gray-600">
-            No news yet. Click <span className="font-semibold">“New News”</span> to create one.
+            No news yet. Click <span className="font-semibold">“New News”</span>{" "}
+            to create one.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -190,14 +211,20 @@ function NewsCard({ news, onEdit, onDelete }) {
   return (
     <div className="rounded border bg-white shadow-sm overflow-hidden">
       {imageUrl ? (
-        <img src={imageUrl} alt={news.title || ""} className="h-40 w-full object-cover" />
+        <img
+          src={imageUrl}
+          alt={news.title || ""}
+          className="h-40 w-full object-cover"
+        />
       ) : (
         <div className="h-40 w-full bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
           No image
         </div>
       )}
       <div className="p-3">
-        <span className="text-[10px] px-2 py-0.5 rounded bg-gray-200">{news.tag || "No tag"}</span>
+        <span className="text-[10px] px-2 py-0.5 rounded bg-gray-200">
+          {news.tag || "No tag"}
+        </span>
         <div className="font-semibold mt-1">{news.title || "Untitled"}</div>
         <div className="text-xs text-gray-500 mt-1">
           {news.is_active ? (
@@ -206,7 +233,9 @@ function NewsCard({ news, onEdit, onDelete }) {
             <span className="text-gray-500">Inactive</span>
           )}
         </div>
-        <div className="text-xs text-gray-500 mt-1">Published: {news.published_at || "—"}</div>
+        <div className="text-xs text-gray-500 mt-1">
+          Published: {news.published_at || "—"}
+        </div>
         <div className="mt-3 flex items-center justify-end gap-2">
           <button
             onClick={onEdit}
@@ -267,8 +296,12 @@ function NewsModal({ initial, onClose, onSubmit, saving, error }) {
       <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl max-h-[80vh] overflow-y-auto">
         {/* Sticky header */}
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between border-b px-5 py-3">
-          <h2 className="text-lg font-semibold">{isEdit ? "Edit News" : "New News"}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <h2 className="text-lg font-semibold">
+            {isEdit ? "Edit News" : "New News"}
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            ✕
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-5">
@@ -336,7 +369,9 @@ function NewsModal({ initial, onClose, onSubmit, saving, error }) {
               <div>
                 <label className="block text-sm font-medium mb-1">Upload Image</label>
                 <input ref={fileRef} type="file" accept="image/*" className="block w-full text-sm" />
-                <p className="text-xs text-gray-500 mt-1">PNG/JPG. Recommended width ≥ 1600px.</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  PNG/JPG. Recommended width ≥ 1600px.
+                </p>
               </div>
 
               <div>

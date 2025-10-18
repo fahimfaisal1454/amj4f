@@ -1,24 +1,15 @@
+// src/Dashboard/BannersAdmin.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
-import { ENDPOINTS } from "../api/endpoints";
+import { ENDPOINTS, ABS } from "../api/endpoints";
 
 /* ============================== helpers ============================== */
 
-/** Build an absolute URL for create/update/delete.
- * If ENDPOINTS.banners is relative (/api/banners/), it prefixes VITE_API_BASE.
- * If it's already absolute, it uses it as-is.
- */
-function buildUrl(basePath, id) {
-  const isAbs = /^https?:\/\//i.test(basePath);
-  const trimmed = String(basePath).replace(/\/+$/, ""); // remove trailing slash
-  const path = id ? `${trimmed}/${id}/` : `${trimmed}/`;
-  if (isAbs) return path; // already absolute
-  const base = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
-  return `${base}${path}`;
-}
+// Absolute URL for <img src>
+const fileUrl = (p) => (!p ? "" : ABS(p));
 
-/** Read the access token from localStorage (VITE_TOKEN_STORAGE_KEY=aj_tokens). */
+/** Access token from localStorage (VITE_TOKEN_STORAGE_KEY or "aj_tokens") */
 function getAccessToken() {
   try {
     const key = import.meta.env.VITE_TOKEN_STORAGE_KEY || "aj_tokens";
@@ -31,11 +22,11 @@ function getAccessToken() {
   }
 }
 
-/** Build headers for fetch; adds Authorization if token exists. */
+/** Build headers; never set Content-Type for FormData */
 function authHeaders({ isForm = false } = {}) {
   const token = getAccessToken();
   const h = {};
-  if (token) h["Authorization"] = `Bearer ${token}`; // DRF SimpleJWT style
+  if (token) h.Authorization = `Bearer ${token}`;
   if (!isForm) h["Content-Type"] = "application/json";
   return h;
 }
@@ -55,12 +46,28 @@ async function parseError(res) {
   }
 }
 
+/** If editing with PUT and no new image chosen, fetch the existing image and attach as a File */
+async function fetchExistingImageFile(imagePathOrUrl) {
+  if (!imagePathOrUrl) return null;
+  const url = ABS(imagePathOrUrl);
+  const resp = await fetch(url, { credentials: "include" });
+  if (!resp.ok) return null;
+  const blob = await resp.blob();
+  const name =
+    url.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() ||
+    "image.jpg";
+  return new File([blob], name, { type: blob.type || "image/jpeg" });
+}
+
 /* ============================== main ============================== */
 
 export default function BannersAdmin() {
-  // List banners via your existing hook (it already handles GET auth/base)
+  // Read list
   const { data, loading, error, refetch } = useApiQuery(ENDPOINTS.banners, []);
-  const items = useMemo(() => (Array.isArray(data) ? data : data?.results ?? []), [data]);
+  const items = useMemo(
+    () => (Array.isArray(data) ? data : data?.results ?? []),
+    [data]
+  );
 
   // UI state
   const [showModal, setShowModal] = useState(false);
@@ -68,7 +75,7 @@ export default function BannersAdmin() {
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Modal open/close
+  // Modal control
   const openCreate = () => {
     setEditing(null);
     setSubmitError("");
@@ -85,11 +92,11 @@ export default function BannersAdmin() {
     setSubmitError("");
   };
 
-  // Delete
+  // DELETE  /api/banners/<id>/
   const handleDelete = async (id) => {
     if (!confirm("Delete this banner?")) return;
     try {
-      const url = buildUrl(ENDPOINTS.banners, id);
+      const url = ABS(`${ENDPOINTS.banners}${id}/`);
       const res = await fetch(url, {
         method: "DELETE",
         headers: authHeaders(),
@@ -102,18 +109,36 @@ export default function BannersAdmin() {
     }
   };
 
-  // Create/Update submit
+  // CREATE (POST) / UPDATE (PUT)
   const handleSubmit = async (payload) => {
     setSaving(true);
     setSubmitError("");
     try {
       const isEdit = Boolean(editing?.id);
-      const url = buildUrl(ENDPOINTS.banners, isEdit ? editing.id : undefined);
 
+      // DRF wants trailing slash
+      const url = isEdit
+        ? ABS(`${ENDPOINTS.banners}${editing.id}/`)
+        : ABS(ENDPOINTS.banners);
+
+      // Build FormData
       const body = new FormData();
       Object.entries(payload).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== "") body.append(k, v);
       });
+
+      // Require image on create (adjust if your model allows null)
+      if (!isEdit && !payload.image) {
+        setSubmitError("Please select an image.");
+        setSaving(false);
+        return;
+      }
+
+      // For PUT, if no new image chosen, reuse the existing image
+      if (isEdit && !payload.image && editing?.image) {
+        const existingFile = await fetchExistingImageFile(editing.image);
+        if (existingFile) body.append("image", existingFile);
+      }
 
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
@@ -150,7 +175,8 @@ export default function BannersAdmin() {
       {!loading && !error && (
         items.length === 0 ? (
           <div className="rounded border bg-white p-6 text-gray-600">
-            No banners yet. Click <span className="font-semibold">“New Banner”</span> to create one.
+            No banners yet. Click{" "}
+            <span className="font-semibold">“New Banner”</span> to create one.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -182,10 +208,11 @@ export default function BannersAdmin() {
 /* ============================== subcomponents ============================== */
 
 function BannerCard({ banner, onEdit, onDelete }) {
+  const img = fileUrl(banner.image);
   return (
     <div className="rounded border bg-white shadow-sm overflow-hidden">
-      {banner.image ? (
-        <img src={banner.image} alt={banner.title || ""} className="h-40 w-full object-cover" />
+      {img ? (
+        <img src={img} alt={banner.title || ""} className="h-40 w-full object-cover" />
       ) : (
         <div className="h-40 w-full bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
           No image
@@ -194,10 +221,13 @@ function BannerCard({ banner, onEdit, onDelete }) {
 
       <div className="p-3">
         <div className="font-semibold">{banner.title || "Untitled"}</div>
-        {banner.caption && <div className="text-sm text-gray-500">{banner.caption}</div>}
+        {banner.caption && (
+          <div className="text-sm text-gray-500">{banner.caption}</div>
+        )}
         {(banner.cta_label || banner.cta_href) && (
           <div className="text-xs mt-1">
-            CTA: <span className="font-medium">{banner.cta_label || "—"}</span> → {banner.cta_href || "—"}
+            CTA: <span className="font-medium">{banner.cta_label || "—"}</span>{" "}
+            → {banner.cta_href || "—"}
           </div>
         )}
         <div className="text-xs mt-1">
@@ -234,11 +264,11 @@ function BannerModal({ initial, onClose, onSubmit, saving, error }) {
   const [caption, setCaption] = useState(initial?.caption || "");
   const [ctaLabel, setCtaLabel] = useState(initial?.cta_label || "");
   const [ctaHref, setCtaHref] = useState(initial?.cta_href || "");
-  const [isActive, setIsActive] = useState(Boolean(initial?.is_active)); // NEW FIELD
-  const [previewUrl, setPreviewUrl] = useState(initial?.image || "");
+  const [isActive, setIsActive] = useState(Boolean(initial?.is_active));
+  const [previewUrl, setPreviewUrl] = useState(fileUrl(initial?.image) || "");
   const fileRef = useRef(null);
 
-  // Preview when a file is selected
+  // Preview selected file
   useEffect(() => {
     const file = fileRef.current?.files?.[0];
     if (!file) return;
@@ -255,7 +285,7 @@ function BannerModal({ initial, onClose, onSubmit, saving, error }) {
       caption,
       cta_label: ctaLabel,
       cta_href: ctaHref,
-      is_active: isActive, // ADD TO PAYLOAD
+      is_active: isActive,
     };
     if (fileRef.current?.files?.[0]) payload.image = fileRef.current.files[0];
     onSubmit(payload);
@@ -267,8 +297,12 @@ function BannerModal({ initial, onClose, onSubmit, saving, error }) {
       <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl max-h-[80vh] overflow-y-auto">
         {/* Sticky header */}
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between border-b px-5 py-3">
-          <h2 className="text-lg font-semibold">{isEdit ? "Edit Banner" : "New Banner"}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <h2 className="text-lg font-semibold">
+            {isEdit ? "Edit Banner" : "New Banner"}
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            ✕
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-5">
@@ -320,7 +354,6 @@ function BannerModal({ initial, onClose, onSubmit, saving, error }) {
               />
             </div>
 
-            {/* NEW is_active checkbox */}
             <div className="flex items-center gap-2 lg:col-span-2">
               <input
                 id="isActive"

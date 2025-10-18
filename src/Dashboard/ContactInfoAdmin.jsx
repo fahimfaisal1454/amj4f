@@ -1,17 +1,11 @@
-// src/Dashboard/ContactInfoAdmin.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
-import { ENDPOINTS } from "../api/endpoints";
+import { ENDPOINTS, ABS } from "../api/endpoints";
 
-/* ===== helpers (same pattern as your other admin pages) ===== */
-const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
-const buildUrl = (base, id) => {
-  const trimmed = String(base).replace(/\/+$/, "");
-  const path = id ? `${trimmed}/${id}/` : `${trimmed}/`;
-  return /^https?:\/\//i.test(base) ? path : `${API_BASE}${path}`;
-};
-const getToken = () => {
+/* ============================== helpers ============================== */
+
+function getAccessToken() {
   try {
     const key = import.meta.env.VITE_TOKEN_STORAGE_KEY || "aj_tokens";
     const raw = localStorage.getItem(key);
@@ -21,16 +15,15 @@ const getToken = () => {
   } catch {
     return null;
   }
-};
-const authHeaders = ({ isForm = false } = {}) => {
-  // IMPORTANT: when sending FormData, do NOT set Content-Type
-  const t = getToken();
+}
+function authHeaders({ isForm = false } = {}) {
+  const token = getAccessToken();
   const h = {};
-  if (t) h.Authorization = `Bearer ${t}`;
+  if (token) h.Authorization = `Bearer ${token}`;
   if (!isForm) h["Content-Type"] = "application/json";
   return h;
-};
-const parseError = async (res) => {
+}
+async function parseError(res) {
   try {
     const j = await res.json();
     const msg =
@@ -41,9 +34,10 @@ const parseError = async (res) => {
   } catch {
     return new Error(`${res.status} ${res.statusText}`);
   }
-};
+}
 
 /* ============================== main ============================== */
+
 export default function ContactInfoAdmin() {
   const { data, loading, error, refetch } = useApiQuery(ENDPOINTS.contactInfo, []);
   const info = useMemo(() => (Array.isArray(data) ? data[0] : data), [data]);
@@ -76,9 +70,10 @@ export default function ContactInfoAdmin() {
     setMsg("");
     try {
       const isEdit = Boolean(info?.id);
-      const url = buildUrl(ENDPOINTS.contactInfoManage, isEdit ? info.id : undefined);
+      const url = isEdit
+        ? ABS(`${ENDPOINTS.contactInfoManage}${info.id}/`)
+        : ABS(ENDPOINTS.contactInfoManage);
 
-      // Send multipart/form-data to match DRF FormParser/MultiPartParser
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, v ?? ""));
 
