@@ -11,23 +11,20 @@ const FALLBACK = [
 export default function Home() {
   const [slides, setSlides] = React.useState(FALLBACK);
   const [index, setIndex] = React.useState(0);
-  const [paused, setPaused] = React.useState(false);
 
+  // fetch banners (optional)
   React.useEffect(() => {
     (async () => {
       try {
         const r = await fetch(`${API}/api/banners/`);
         if (!r.ok) return;
         const json = await r.json();
-
-        // ← normalize array vs paginated shape
         const rows = Array.isArray(json) ? json : (json?.results || []);
-
         if (!rows.length) return;
 
         const mapped = rows.map((b) => ({
-          image: b.image_url || b.image,                    // absolute URL from serializer
-          mobile: b.mobile_image_url || b.mobile_image,     // optional
+          image: b.image_url || b.image,
+          mobile: b.mobile_image_url || b.mobile_image,
           title: b.title,
           body: b.caption,
           cta: { label: b.cta_label, href: b.cta_href || "#" },
@@ -35,25 +32,39 @@ export default function Home() {
 
         setSlides(mapped);
         setIndex(0);
-      } catch {}
+      } catch {
+        // ignore -> fallback stays
+      }
     })();
   }, []);
 
+  // autoplay every 2s (pause when tab hidden)
   React.useEffect(() => {
-    if (paused || slides.length === 0) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), 6000);
-    return () => clearInterval(id);
-  }, [paused, slides]);
+    if (!slides.length) return;
+    let active = true;
+
+    const tick = () => {
+      if (!document.hidden && active) {
+        setIndex((i) => (i + 1) % slides.length);
+      }
+    };
+
+    const id = setInterval(tick, 2000);
+    const onVis = () => {}; // we just read document.hidden in tick
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      active = false;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [slides.length]);
 
   const go = (i) => slides.length && setIndex((i + slides.length) % slides.length);
   const slide = slides[index] || {};
 
   return (
-    <section
-      className="relative h-screen w-full overflow-hidden"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
+    <section className="relative h-screen w-full overflow-hidden">
       {/* Slides */}
       <div className="absolute inset-0">
         {slides.map((s, i) => (
@@ -104,22 +115,6 @@ export default function Home() {
       >
         ›
       </button>
-
-      {/* Dots */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            aria-label={`Go to slide ${i + 1}`}
-            onClick={() => setIndex(i)}
-            className={`h-2 w-2 rounded-full transition-all ${
-              i === index
-                ? "h-3 w-3 bg-yellow-400 shadow-[0_0_0_3px_rgba(0,0,0,0.25)]"
-                : "bg-white/60 hover:bg-white"
-            }`}
-          />
-        ))}
-      </div>
     </section>
   );
 }

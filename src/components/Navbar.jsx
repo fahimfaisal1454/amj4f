@@ -1,3 +1,6 @@
+// src/components/Navbar.jsx
+import React from "react";
+
 export default function Navbar() {
   const links = [
     { href: "#home", label: "Home" },
@@ -8,8 +11,26 @@ export default function Navbar() {
     { href: "#contact", label: "Contacts" },
   ];
 
+  // Solid background after scrolling a bit (e.g. 40px)
+  const [solid, setSolid] = React.useState(false);
+  React.useEffect(() => {
+    const onScroll = () => setSolid(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="fixed top-0 inset-x-0 h-nav z-50 bg-pactBg border-y border-[#e1dfdc]">
+    <header
+      // fixed over hero, translucent; becomes more solid after scroll
+      className={[
+        "fixed top-0 inset-x-0 z-50 h-nav transition-colors",
+        "border-b",
+        solid
+          ? "bg-white/85 backdrop-blur-md border-white/60"
+          : "bg-white/25 backdrop-blur-md border-white/30",
+      ].join(" ")}
+    >
       <div className="max-w-container mx-auto h-full flex items-center justify-between px-4">
         {/* Logo */}
         <a href="#home" aria-label="Home" className="flex items-center gap-2">
@@ -40,9 +61,9 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Login + Dashboard buttons */}
+          {/* Login + Dashboard */}
           <div className="flex items-center gap-3 ml-4">
-                        <a
+            <a
               href="/admin"
               className="inline-flex items-center rounded-full bg-pactPurpleHover px-4 py-2 text-sm font-bold text-white hover:opacity-90"
               aria-label="Dashboard"
@@ -56,7 +77,6 @@ export default function Navbar() {
             >
               Login
             </a>
-
           </div>
         </div>
 
@@ -73,10 +93,8 @@ export default function Navbar() {
               </a>
             ))}
           </nav>
-
-          {/* Mobile Login + Dashboard */}
           <div className="flex gap-2 mt-2">
-                        <a
+            <a
               href="/admin"
               className="inline-flex items-center rounded-full bg-pactPurpleHover px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
               aria-label="Dashboard"
@@ -90,7 +108,6 @@ export default function Navbar() {
             >
               Login
             </a>
-
           </div>
         </div>
       </div>
