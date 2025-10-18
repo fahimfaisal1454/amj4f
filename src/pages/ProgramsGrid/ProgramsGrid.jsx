@@ -1,54 +1,40 @@
-// src/Pages/ProgramsGrid/ProgramsGrid.jsx
 import React from "react";
 
-const programs = [
-  {
-    tag: "EDUCATION",
-    tagColor: "bg-pactPurple text-white",
-    title: "Education for All",
-    desc:
-      "We provide scholarships, after-school programs, and digital literacy sessions to help students thrive in rural Jashore.",
-    image: "/src/assets/programs/education.jpg",
-    body:
-      "Our education portfolio supports learners from primary to secondary levels. We provide scholarships for vulnerable students, after-school tutoring led by trained facilitators, and digital literacy sessions with tablets and offline content. Parents’ groups engage on attendance, child safety, and inclusive education. We partner with schools to improve reading outcomes and STEM exposure for girls.",
-  },
-  {
-    tag: "HEALTH",
-    tagColor: "bg-green-500 text-white",
-    title: "Community Health",
-    desc:
-      "Through mobile clinics, maternal health care, and nutrition workshops, we improve health outcomes for families.",
-    image: "/src/assets/programs/health.jpg",
-    body:
-      "Our health work strengthens primary care access with mobile clinics, community health workers, and referral pathways. We support maternal and newborn care, immunization catch-ups, and community nutrition. Behavior change sessions address WASH, anemia, and child feeding. We collect anonymized data for continuous quality improvement with local providers.",
-  },
-  {
-    tag: "LIVELIHOODS",
-    tagColor: "bg-yellow-400 text-black",
-    title: "Livelihoods & Skills",
-    desc:
-      "Our training and micro-grants programs empower families to build small businesses and steady incomes.",
-    image: "/src/assets/programs/livelihood.jpg",
-    body:
-      "We train youth and caregivers in market-relevant skills (tailoring, repair, agri-value chains), provide start-up kits or micro-grants, and mentor enterprise groups. Village savings and loan groups help households build resilience. Partnerships with local businesses link graduates to buyers and apprenticeships, prioritizing women and persons with disabilities.",
-  },
-  {
-    tag: "ADVOCACY",
-    tagColor: "bg-blue-600 text-white",
-    title: "Advocacy & Awareness",
-    desc:
-      "We partner with local leaders on campaigns for girls’ education, road safety, and environmental protection.",
-    image: "/src/assets/programs/advocacy.jpg",
-    body:
-      "Youth and community leaders co-design campaigns on girls’ education, road safety, anti-child labor, and environmental protection. We support citizen feedback forums and constructive engagement with local institutions. Toolkits, radio spots, and school clubs help messages stick, while simple metrics track reach and policy changes.",
-  },
-];
+// API base (works with or without .env)
+// In dev, create .env with: VITE_API_BASE=http://127.0.0.1:8000
+const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
+const fileUrl = (p) => (p ? (p.startsWith("http") ? p : `${API}${p}`) : "");
+const FALLBACK = "/src/assets/news/placeholder.jpg"; // optional fallback
 
 export default function ProgramsGrid() {
-  // Modal state
+  const [programs, setPrograms] = React.useState([]);
   const [active, setActive] = React.useState(null);
 
-  // Close on Esc
+  // Load programs from backend
+  React.useEffect(() => {
+    fetch(`${API}/api/programs/`)
+      .then((r) => r.json())
+      .then((rows) => {
+        const mapped = (rows || [])
+          .filter((x) => x.is_active !== false)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map((p) => ({
+            tag: p.tag || "PROGRAM",
+            tagColor: p.tag_color?.trim() || "bg-pactPurple text-white",
+            title: p.title,
+            desc: p.desc,
+            body: p.body,
+            image: fileUrl(p.image),
+          }));
+        setPrograms(mapped);
+      })
+      .catch((e) => {
+        console.error("Failed to fetch programs:", e);
+        setPrograms([]);
+      });
+  }, []);
+
+  // Close on Esc (unchanged)
   React.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setActive(null);
     window.addEventListener("keydown", onKey);
@@ -80,7 +66,7 @@ export default function ProgramsGrid() {
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {programs.map((p, i) => (
             <article
-              key={i}
+              key={`${p.title}-${i}`}
               onClick={() => setActive(p)}
               className="flex cursor-pointer flex-col overflow-hidden rounded-md border border-[#dcd8d3] bg-white shadow-sm hover:shadow-md transition"
             >
@@ -88,6 +74,7 @@ export default function ProgramsGrid() {
                 src={p.image}
                 alt={p.title}
                 className="h-48 w-full object-cover"
+                onError={(e) => (e.currentTarget.src = FALLBACK)}
               />
               <div className="flex-1 bg-[#efeeec] px-5 pt-4 pb-6 border-l-8 border-[#d4d0cb]">
                 <span
@@ -131,6 +118,7 @@ export default function ProgramsGrid() {
                 src={active.image}
                 alt={active.title}
                 className="absolute inset-0 h-full w-full object-cover"
+                onError={(e) => (e.currentTarget.src = FALLBACK)}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
               <div className="absolute bottom-4 left-4 right-4">

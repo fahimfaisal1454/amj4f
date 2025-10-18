@@ -1,39 +1,34 @@
-// src/Pages/NewsSection/NewsSection.jsx
+// src/pages/NewsSection/NewsSection.jsx
 import React from "react";
 
-// ✅ If you don’t have .env, just set your backend URL here:
-const API = "http://127.0.0.1:8000"; // <-- change to your domain when you deploy
-const fileUrl = (p) => (p ? `${API}${p}` : "");
-const FALLBACK_IMG = "/src/assets/news/placeholder.jpg";
+// 🔧 Backend base URL — adjust if deploying
+const API_BASE = "http://127.0.0.1:8000";
+const fileUrl = (p) => (!p ? "" : p.startsWith("http") ? p : `${API_BASE}${p}`);
 
 export default function NewsSection() {
   const [items, setItems] = React.useState([]);
   const [active, setActive] = React.useState(null);
 
-  // Fetch news items from Django
+  // Fetch news from backend
   React.useEffect(() => {
-    fetch(`${API}/api/news/`)
-      .then((r) => r.json())
+    fetch(`${API_BASE}/api/news/`)
+      .then((res) => res.json())
       .then((data) => {
-        if (!Array.isArray(data)) return;
-
-        const mapped = data
+        const mapped = (data || [])
           .filter((n) => n.is_active)
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           .map((n) => ({
             tag: n.tag || "NEWS",
             tagColor: n.tag_color || "bg-pactPurple text-white",
             title: n.title,
-            image: fileUrl(n.image),
             body: n.body,
+            image: fileUrl(n.image),
           }));
-
         setItems(mapped);
       })
-      .catch((err) => console.error("Error loading news:", err));
+      .catch((err) => console.error("Failed to fetch news:", err));
   }, []);
 
-  // ESC closes modal
   React.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setActive(null);
     window.addEventListener("keydown", onKey);
@@ -59,41 +54,41 @@ export default function NewsSection() {
           Latest News and Highlights
         </h2>
 
-        <div className="mt-8 grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((n, i) => (
-            <article
-              key={i}
-              onClick={() => setActive(n)}
-              className="flex cursor-pointer flex-col overflow-hidden rounded-md border border-[#dcd8d3] bg-white shadow-sm hover:shadow-md transition"
-            >
-              {/* ✅ Fixed: Use backend URL + fallback */}
-              <img
-                src={fileUrl(n.image)}
-                alt={n.title}
-                onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
-                className="block h-48 w-full object-cover"
-              />
-
-              <div className="flex-1 bg-[#efeeec] px-5 pt-4 pb-6 border-l-8 border-[#d4d0cb]">
-                <span
-                  className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${n.tagColor}`}
-                >
-                  {n.tag}
-                </span>
-
-                <h3 className="mt-3 text-[1.05rem] leading-snug font-semibold text-[#2b2b2b]">
-                  {n.title}
-                </h3>
-
-                <div className="mt-3">
-                  <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
-                    Read more →
+        {items.length === 0 ? (
+          <p className="text-center text-gray-500">No news available.</p>
+        ) : (
+          <div className="mt-8 grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
+            {items.map((n, i) => (
+              <article
+                key={i}
+                onClick={() => setActive(n)}
+                className="flex cursor-pointer flex-col overflow-hidden rounded-md border border-[#dcd8d3] bg-white shadow-sm hover:shadow-md transition"
+              >
+                <img
+                  src={n.image}
+                  alt={n.title}
+                  className="h-48 w-full object-cover"
+                  onError={(e) => (e.currentTarget.src = "/src/assets/news/placeholder.jpg")}
+                />
+                <div className="flex-1 bg-[#efeeec] px-5 pt-4 pb-6 border-l-8 border-[#d4d0cb]">
+                  <span
+                    className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${n.tagColor}`}
+                  >
+                    {n.tag}
                   </span>
+                  <h3 className="mt-3 text-[1.05rem] leading-snug font-semibold text-[#2b2b2b]">
+                    {n.title}
+                  </h3>
+                  <div className="mt-3">
+                    <span className="inline-flex items-center text-sm font-semibold text-pactPurple/90 hover:text-pactPurple">
+                      Read more →
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal */}
@@ -108,12 +103,10 @@ export default function NewsSection() {
             className="w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* header image */}
             <div className="relative h-56 w-full">
               <img
-                src={fileUrl(active.image)}
+                src={active.image}
                 alt={active.title}
-                onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
                 className="absolute inset-0 h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
@@ -135,13 +128,10 @@ export default function NewsSection() {
                 ✕
               </button>
             </div>
-
-            {/* body */}
             <div className="px-5 py-4">
               <p className="text-[0.95rem] leading-relaxed text-[#363636]">
                 {active.body || "Details coming soon."}
               </p>
-
               <div className="mt-5 flex items-center justify-between">
                 <span className="text-xs text-[#777]">
                   Tap <kbd className="rounded bg-[#eee] px-1 py-[2px]">Esc</kbd> to close

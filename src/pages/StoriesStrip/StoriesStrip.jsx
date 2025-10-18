@@ -1,58 +1,38 @@
 // src/Pages/StoriesStrip/StoriesStrip.jsx
 import React from "react";
 
-const STORIES = [
-  {
-    tag: "STORY",
-    tagColor: "bg-pactPurple text-white",
-    title: "Rupa’s Scholarship Opened the Door to STEM",
-    desc:
-      "From almost dropping out to leading her school’s science fair team—Rupa’s path changed with tutoring and a small grant.",
-    body:
-      "Rupa was close to leaving school to support her family. With after-school tutoring, a small scholarship, and a STEM club mentor, she not only stayed in school but went on to lead her science fair team. Her story is a reminder that modest support—delivered at the right time—can unlock potential for learners in rural communities.",
-    image: "/src/assets/stories/1.jpg",
-    href: "#contact",
-  },
-  {
-    tag: "STORY",
-    tagColor: "bg-green-500 text-white",
-    title: "Saiful’s Tailoring Shop Creates Stable Income",
-    desc:
-      "After a 6-week training and a starter kit, Saiful now employs two apprentices and supports his family reliably.",
-    body:
-      "Saiful joined our six-week tailoring training and received a starter kit funded by community savings. Today, he runs a small shop near the market, employs two apprentices, and has regular contracts with local schools. The steady income means his children are back in school and his family is saving for the future.",
-    image: "/src/assets/stories/2.jpg",
-    href: "#contact",
-  },
-  {
-    tag: "STORY",
-    tagColor: "bg-yellow-400 text-black",
-    title: "Safe Roads Campaign Reduced Local Accidents",
-    desc:
-      "With youth volunteers and traffic signage, accident reports dropped markedly across two intersections.",
-    body:
-      "Youth volunteers mapped risk areas, installed low-cost signage, and worked with transport leaders to introduce safe speed pledges. Within three months, reported incidents at two intersections fell sharply. The effort shows how data from communities can drive quick, low-cost improvements in public safety.",
-    image: "/src/assets/stories/3.jpg",
-    href: "#contact",
-  },
-  {
-    tag: "STORY",
-    tagColor: "bg-blue-600 text-white",
-    title: "Clinic-on-Wheels Reached Remote Villages",
-    desc:
-      "Over 900 patient visits in the first quarter—maternal checkups and vaccinations where access was hardest.",
-    body:
-      "The clinic-on-wheels operates on a rotating schedule, bringing maternal health checkups, vaccinations, and essential medicines to remote villages. Over the first quarter, providers recorded 900+ patient visits, with particular gains in immunization coverage and antenatal care attendance.",
-    image: "/src/assets/stories/4.jpg",
-    href: "#contact",
-  },
-];
+// Works with or without .env (VITE_API_BASE=http://127.0.0.1:8000)
+const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
+const fileUrl = (p) => (p ? (p.startsWith("http") ? p : `${API}${p}`) : "");
+const FALLBACK = "/src/assets/news/placeholder.jpg"; // optional
 
 export default function StoriesStrip() {
-  // modal state
+  const [items, setItems] = React.useState([]); // replaces STORIES
   const [active, setActive] = React.useState(null);
 
-  // close on ESC
+  // fetch stories once
+  React.useEffect(() => {
+    fetch(`${API}/api/stories/`)
+      .then((r) => r.json())
+      .then((rows) => {
+        const mapped = (rows || [])
+          .filter((x) => x.is_active !== false)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map((s) => ({
+            tag: s.tag || "STORY",
+            tagColor: s.tag_color?.trim() || "bg-pactPurple text-white",
+            title: s.title,
+            desc: s.desc,
+            body: s.body,
+            image: fileUrl(s.image),
+            href: s.href || "#contact",
+          }));
+        setItems(mapped);
+      })
+      .catch(() => setItems([]));
+  }, []);
+
+  // close on ESC (unchanged)
   React.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setActive(null);
     window.addEventListener("keydown", onKey);
@@ -79,13 +59,18 @@ export default function StoriesStrip() {
         </h2>
 
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {STORIES.map((s, i) => (
+          {items.map((s, i) => (
             <article
-              key={i}
+              key={`${s.title}-${i}`}
               onClick={() => setActive(s)}
               className="flex cursor-pointer flex-col overflow-hidden rounded-md border border-[#dcd8d3] bg-white shadow-sm hover:shadow-md transition"
             >
-              <img src={s.image} alt={s.title} className="h-48 w-full object-cover" />
+              <img
+                src={s.image}
+                alt={s.title}
+                className="h-48 w-full object-cover"
+                onError={(e) => (e.currentTarget.src = FALLBACK)}
+              />
               <div className="flex-1 bg-[#efeeec] px-5 pt-4 pb-6 border-l-8 border-[#d4d0cb]">
                 <span
                   className={`inline-block rounded-md px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${s.tagColor}`}
@@ -133,6 +118,7 @@ export default function StoriesStrip() {
                 src={active.image}
                 alt={active.title}
                 className="absolute inset-0 h-full w-full object-cover"
+                onError={(e) => (e.currentTarget.src = FALLBACK)}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
               <div className="absolute bottom-4 left-4 right-4">
