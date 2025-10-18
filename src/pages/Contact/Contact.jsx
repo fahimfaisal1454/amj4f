@@ -1,17 +1,94 @@
+// src/pages/Contact/Contact.jsx
 import React from "react";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 
+// Works with or without .env
+// Optional .env: VITE_API_BASE=http://127.0.0.1:8000
+const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
+
 export default function Contact() {
+  // ---- contact info (from backend) ----
+  const [info, setInfo] = React.useState({
+    email: "info@amarjashore.org",
+    phone: "+880 1234-567-89",
+    address: "Jessore, Bangladesh",
+    hours: "Mon–Fri, 9 AM – 5 PM",
+  });
+  const [loadingInfo, setLoadingInfo] = React.useState(true);
+
+  // ---- form state ----
+  const [form, setForm] = React.useState({
+    name: "",
+    email: "",
+    phone: "",
+    subject: "",
+    message: "",
+  });
+  const [submitting, setSubmitting] = React.useState(false);
+  const [sent, setSent] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  // Fetch contact info once
+  React.useEffect(() => {
+    fetch(`${API}/api/contact-info/`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setInfo({
+            email: data.email || "",
+            phone: data.phone || "",
+            address: data.address || "",
+            hours: data.hours || "",
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingInfo(false));
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    setSent(false);
+
+    try {
+      const res = await fetch(`${API}/api/contact/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || "Failed to send message");
+      }
+
+      setSent(true);
+      setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+    } catch (err) {
+      setError("Could not send your message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Build the left-side info items with fetched values
   const infoItems = [
     {
       icon: <Mail className="mt-1 h-5 w-5 text-pactPurple" />,
       label: "Email",
       content: (
         <a
-          href="mailto:info@amarjashore.org"
+          href={`mailto:${info.email || "info@amarjashore.org"}`}
           className="font-medium text-pactPurple hover:opacity-80"
         >
-          info@amarjashore.org
+          {loadingInfo ? "…" : (info.email || "info@amarjashore.org")}
         </a>
       ),
     },
@@ -20,22 +97,30 @@ export default function Contact() {
       label: "Phone",
       content: (
         <a
-          href="tel:+880123456789"
+          href={`tel:${info.phone || "+880123456789"}`}
           className="font-medium text-pactPurple hover:opacity-80"
         >
-          +880 1234-567-89
+          {loadingInfo ? "…" : (info.phone || "+880 1234-567-89")}
         </a>
       ),
     },
     {
       icon: <MapPin className="mt-1 h-5 w-5 text-pactPurple" />,
       label: "Address",
-      content: <p className="font-medium">Jessore, Bangladesh</p>,
+      content: (
+        <p className="font-medium">
+          {loadingInfo ? "…" : (info.address || "Jessore, Bangladesh")}
+        </p>
+      ),
     },
     {
       icon: <Clock className="mt-1 h-5 w-5 text-pactPurple" />,
       label: "Hours",
-      content: <p className="font-medium">Mon–Fri, 9 AM – 5 PM</p>,
+      content: (
+        <p className="font-medium">
+          {loadingInfo ? "…" : (info.hours || "Mon–Fri, 9 AM – 5 PM")}
+        </p>
+      ),
     },
   ];
 
@@ -104,30 +189,36 @@ export default function Contact() {
                 loading="lazy"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
-                src="https://www.google.com/maps?q=Jessore,Bangladesh&z=12&output=embed"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(
+                  info.address || "Jessore,Bangladesh"
+                )}&z=12&output=embed`}
               />
             </div>
           </aside>
 
           {/* Right Column */}
           <div className="md:col-span-3">
-            <form
-              onSubmit={(e) => e.preventDefault()}
-              className="rounded-md border border-[#dcd8d3] bg-white p-5 shadow-sm"
-            >
+            <form onSubmit={submit} className="rounded-md border border-[#dcd8d3] bg-white p-5 shadow-sm">
               <h2 className="text-xl font-bold text-pactPurple">
                 Send us a message
               </h2>
-              <p className="mt-1 text-[#555]">
-                We usually reply within 1–2 business days.
-              </p>
+              <p className="mt-1 text-[#555]">We usually reply within 1–2 business days.</p>
+
+              {/* Alerts */}
+              {sent && (
+                <div className="mt-3 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-green-700 text-sm">
+                  ✅ Message sent successfully!
+                </div>
+              )}
+              {error && (
+                <div className="mt-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
 
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label
-                    htmlFor="name"
-                    className="text-sm font-medium text-gray-700"
-                  >
+                  <label htmlFor="name" className="text-sm font-medium text-gray-700">
                     Full Name
                   </label>
                   <input
@@ -135,16 +226,15 @@ export default function Contact() {
                     name="name"
                     type="text"
                     required
+                    value={form.name}
+                    onChange={handleChange}
                     className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-pactPurple/40 transition-shadow"
                     placeholder="Your name"
                   />
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-medium text-gray-700"
-                  >
+                  <label htmlFor="email" className="text-sm font-medium text-gray-700">
                     Email
                   </label>
                   <input
@@ -152,48 +242,45 @@ export default function Contact() {
                     name="email"
                     type="email"
                     required
+                    value={form.email}
+                    onChange={handleChange}
                     className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-pactPurple/40 transition-shadow"
                     placeholder="you@example.com"
                   />
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="phone"
-                    className="text-sm font-medium text-gray-700"
-                  >
+                  <label htmlFor="phone" className="text-sm font-medium text-gray-700">
                     Phone (optional)
                   </label>
                   <input
                     id="phone"
                     name="phone"
                     type="tel"
+                    value={form.phone}
+                    onChange={handleChange}
                     className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-pactPurple/40 transition-shadow"
                     placeholder="+880…"
                   />
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="subject"
-                    className="text-sm font-medium text-gray-700"
-                  >
+                  <label htmlFor="subject" className="text-sm font-medium text-gray-700">
                     Subject
                   </label>
                   <input
                     id="subject"
                     name="subject"
                     type="text"
+                    value={form.subject}
+                    onChange={handleChange}
                     className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-pactPurple/40 transition-shadow"
                     placeholder="How can we help?"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label
-                    htmlFor="message"
-                    className="text-sm font-medium text-gray-700"
-                  >
+                  <label htmlFor="message" className="text-sm font-medium text-gray-700">
                     Message
                   </label>
                   <textarea
@@ -201,6 +288,8 @@ export default function Contact() {
                     name="message"
                     required
                     rows={5}
+                    value={form.message}
+                    onChange={handleChange}
                     className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 focus:ring-pactPurple/40 transition-shadow"
                     placeholder="Write your message here…"
                   />
@@ -210,13 +299,16 @@ export default function Contact() {
               <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-full bg-pactPurple px-5 py-2.5 font-semibold text-white shadow hover:opacity-95 hover:scale-105 transition-transform"
+                  disabled={submitting}
+                  className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-semibold text-white shadow transition-transform ${
+                    submitting ? "bg-gray-400" : "bg-pactPurple hover:opacity-95 hover:scale-105"
+                  }`}
                 >
                   <Send className="h-4 w-4" />
-                  Send Message
+                  {submitting ? "Sending…" : "Send Message"}
                 </button>
                 <span className="text-sm text-gray-500">
-                  (This is a demo form)
+                  We’ll never share your contact details.
                 </span>
               </div>
             </form>
