@@ -1,40 +1,152 @@
-import React from "react";
+// src/Dashboard/ContactInfoAdmin.jsx
+import React, { useMemo, useState, useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
 import { ENDPOINTS } from "../api/endpoints";
 
+/* ===== helpers (same pattern as your other admin pages) ===== */
+const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
+const buildUrl = (base, id) => {
+  const trimmed = String(base).replace(/\/+$/, "");
+  const path = id ? `${trimmed}/${id}/` : `${trimmed}/`;
+  return /^https?:\/\//i.test(base) ? path : `${API_BASE}${path}`;
+};
+const getToken = () => {
+  try {
+    const key = import.meta.env.VITE_TOKEN_STORAGE_KEY || "aj_tokens";
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.access || parsed?.token || null;
+  } catch {
+    return null;
+  }
+};
+const authHeaders = ({ isForm = false } = {}) => {
+  // IMPORTANT: when sending FormData, do NOT set Content-Type
+  const t = getToken();
+  const h = {};
+  if (t) h.Authorization = `Bearer ${t}`;
+  if (!isForm) h["Content-Type"] = "application/json";
+  return h;
+};
+const parseError = async (res) => {
+  try {
+    const j = await res.json();
+    const msg =
+      j?.detail ||
+      j?.message ||
+      (j && typeof j === "object" ? Object.values(j)[0] : "");
+    return new Error(msg || `${res.status} ${res.statusText}`);
+  } catch {
+    return new Error(`${res.status} ${res.statusText}`);
+  }
+};
+
+/* ============================== main ============================== */
 export default function ContactInfoAdmin() {
-  const { data, loading, error } = useApiQuery(ENDPOINTS.contactInfo, []);
+  const { data, loading, error, refetch } = useApiQuery(ENDPOINTS.contactInfo, []);
+  const info = useMemo(() => (Array.isArray(data) ? data[0] : data), [data]);
+
+  const [form, setForm] = useState({
+    email: "",
+    phone: "",
+    address: "",
+    hours: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  // hydrate form when API responds
+  useEffect(() => {
+    if (info) {
+      setForm({
+        email: info.email || "",
+        phone: info.phone || "",
+        address: info.address || "",
+        hours: info.hours || "",
+      });
+    }
+  }, [info]);
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMsg("");
+    try {
+      const isEdit = Boolean(info?.id);
+      const url = buildUrl(ENDPOINTS.contactInfoManage, isEdit ? info.id : undefined);
+
+      // Send multipart/form-data to match DRF FormParser/MultiPartParser
+      const body = new FormData();
+      Object.entries(form).forEach(([k, v]) => body.append(k, v ?? ""));
+
+      const res = await fetch(url, {
+        method: isEdit ? "PUT" : "POST",
+        headers: authHeaders({ isForm: true }),
+        body,
+        credentials: "include",
+      });
+      if (!res.ok) throw await parseError(res);
+
+      setMsg("✅ Saved successfully");
+      await refetch();
+    } catch (e) {
+      setMsg(e.message || "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <DashboardLayout>
-      <h1 className="text-2xl font-bold text-pactPurple mb-4">Contact Info</h1>
+      <h1 className="text-2xl font-bold text-pactPurple mb-6">Contact Info</h1>
+
       {loading && <div>Loading…</div>}
-      {error && <div className="text-red-600">{error}</div>}
-      {data && (
-        <div className="grid gap-4">
-          <Row label="Email" value={data.email} />
-          <Row label="Phone" value={data.phone} />
-          <Row label="Address" value={data.address} />
-          <Row label="Hours" value={data.hours} />
+      {error && <div className="text-red-600">{String(error)}</div>}
+
+      {!loading && !error && (
+        <div className="bg-white border rounded p-6 max-w-2xl">
+          <div className="grid gap-4">
+            <Input name="email" label="Email" value={form.email} onChange={handleChange} />
+            <Input name="phone" label="Phone" value={form.phone} onChange={handleChange} />
+            <Input name="address" label="Address" value={form.address} onChange={handleChange} />
+            <Input name="hours" label="Hours" value={form.hours} onChange={handleChange} />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 mt-6">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded bg-pactPurple px-4 py-2 text-white font-semibold hover:opacity-90 disabled:opacity-60"
+            >
+              {saving ? "Saving…" : info?.id ? "Save Changes" : "Create"}
+            </button>
+          </div>
+
+          {msg && <p className="mt-3 text-sm text-gray-700">{msg}</p>}
         </div>
       )}
-
-      <a
-        href="/admin/sitecontent/contactinfo/"
-        className="mt-4 inline-flex w-fit rounded bg-pactPurple px-4 py-2 font-semibold text-white"
-      >
-        Manage in Django Admin
-      </a>
     </DashboardLayout>
   );
 }
 
-function Row({ label, value }) {
+/* ============================== subcomponent ============================== */
+function Input({ name, label, value, onChange }) {
   return (
-    <div className="rounded border bg-white p-4">
-      <div className="text-sm text-gray-500">{label}</div>
-      <div className="font-semibold">{value || "—"}</div>
+    <div>
+      <label className="block text-sm font-medium mb-1" htmlFor={name}>
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type="text"
+        className="w-full rounded border px-3 py-2"
+        value={value || ""}
+        onChange={onChange}
+      />
     </div>
   );
 }

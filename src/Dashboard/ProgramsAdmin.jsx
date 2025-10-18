@@ -223,6 +223,7 @@ function ProgramModal({ initial, onClose, onSubmit, saving, error }) {
   const isEdit = Boolean(initial?.id);
   const [title, setTitle] = useState(initial?.title || "");
   const [desc, setDesc] = useState(initial?.desc || "");
+  const [tag, setTag] = useState(initial?.tag || "PROGRAM");
   const [isActive, setIsActive] = useState(Boolean(initial?.is_active));
   const [previewUrl, setPreviewUrl] = useState(fileUrl(initial?.image) || "");
   const fileRef = useRef(null);
@@ -240,6 +241,7 @@ function ProgramModal({ initial, onClose, onSubmit, saving, error }) {
     const payload = {
       title,
       desc,
+      tag: tag || "PROGRAM",
       is_active: isActive,
     };
     if (fileRef.current?.files?.[0]) payload.image = fileRef.current.files[0];
@@ -266,6 +268,18 @@ function ProgramModal({ initial, onClose, onSubmit, saving, error }) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Program title"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Tag</label>
+              <input
+                type="text"
+                className="w-full rounded border px-3 py-2"
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+                placeholder="Category tag (e.g. EDUCATION)"
                 required
               />
             </div>

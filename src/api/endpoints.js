@@ -18,6 +18,11 @@ export const ENDPOINTS = {
   contact: "/api/contact/",
 
   // ✅ writable admin route for news
+  aboutManage: "/api/about/manage/",
+  aboutWhatWeDo: "/api/about/what-we-do/",
+  aboutJourney: "/api/about/journey/",
   newsManage: "/api/news/manage/",
   programsManage: "/api/programs/manage/",
+  storiesManage: "/api/stories/manage/",
+  contactInfoManage: "/api/contact-info/manage/",
 };
