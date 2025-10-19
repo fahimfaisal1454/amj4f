@@ -1,17 +1,40 @@
+// src/components/Footer.jsx
 import React from "react";
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram } from "lucide-react";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Facebook,
+  Twitter,
+  Instagram,
+} from "lucide-react";
+import treeBg from "../assets/tree.jpg"; // <-- make sure you place your tree.jpg inside src/assets/
 
 export default function Footer() {
   return (
-    <footer className="relative bg-gradient-to-b from-[#f8f6f9] to-[#e6dbe8] text-[#333] border-t border-[#d5c9d8]">
-      {/* Top section */}
-      <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer
+      className="relative text-white"
+      style={{
+        backgroundColor: "#000", // pure black base
+        backgroundImage: `url(${treeBg})`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "left bottom",
+        backgroundSize: "contain",
+      }}
+    >
+      {/* overlay for dark contrast */}
+      <div className="absolute inset-0 bg-black/80" />
+
+      {/* Content */}
+      <div className="relative max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Logo & about */}
         <div>
-          <h2 className="text-2xl font-extrabold text-pactPurple mb-2">
+          <h2
+            className="text-2xl font-extrabold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent"
+          >
             Amar Jashore
           </h2>
-          <p className="text-sm text-[#555] leading-relaxed">
+          <p className="text-sm text-gray-300 leading-relaxed">
             A community-driven NGO empowering education, health, and livelihoods
             in Jessore. Together, we make lasting change possible.
           </p>
@@ -19,94 +42,80 @@ export default function Footer() {
 
         {/* Quick links */}
         <div>
-          <h3 className="text-lg font-semibold text-pactPurple mb-3">
+          <h3
+            className="text-lg font-bold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent"
+          >
             Quick Links
           </h3>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <a href="#home" className="hover:text-pactPurple">
-                Home
-              </a>
-            </li>
-            <li>
-              <a href="#about" className="hover:text-pactPurple">
-                About Us
-              </a>
-            </li>
-            <li>
-              <a href="#programs" className="hover:text-pactPurple">
-                Programs
-              </a>
-            </li>
-            <li>
-              <a href="#stories" className="hover:text-pactPurple">
-                Stories
-              </a>
-            </li>
-            <li>
-              <a href="#contact" className="hover:text-pactPurple">
-                Contact
-              </a>
-            </li>
+          <ul className="space-y-2 text-sm font-bold text-gray-300">
+            {[
+              ["#home", "Home"],
+              ["#about", "About Us"],
+              ["#programs", "Programs"],
+              ["#stories", "Stories"],
+              ["#contact", "Contact"],
+            ].map(([href, label]) => (
+              <li key={href}>
+                <a
+                  href={href}
+                  className="hover:text-lime-300 transition-colors"
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
           </ul>
         </div>
 
         {/* Contact Info */}
         <div>
-          <h3 className="text-lg font-semibold text-pactPurple mb-3">
+          <h3
+            className="text-lg font-semibold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent"
+          >
             Contact Us
           </h3>
-          <ul className="space-y-2 text-sm">
+          <ul className="space-y-2 text-sm text-gray-300">
             <li className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-pactPurple" />
+              <MapPin className="h-4 w-4 text-lime-400" />
               Jessore, Bangladesh
             </li>
             <li className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-pactPurple" /> +880 1234-567-89
+              <Phone className="h-4 w-4 text-lime-400" /> +880 1234-567-89
             </li>
             <li className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-pactPurple" /> info@amarjashore.org
+              <Mail className="h-4 w-4 text-lime-400" /> info@amarjashore.org
             </li>
           </ul>
         </div>
 
         {/* Socials */}
         <div>
-          <h3 className="text-lg font-semibold text-pactPurple mb-3">
+          <h3
+            className="text-lg font-semibold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent"
+          >
             Follow Us
           </h3>
           <div className="flex gap-4">
-            <a
-              href="#"
-              aria-label="Facebook"
-              className="p-2 rounded-full bg-white border border-[#dcd8d3] text-pactPurple hover:bg-pactPurple hover:text-white transition"
-            >
-              <Facebook className="h-4 w-4" />
-            </a>
-            <a
-              href="#"
-              aria-label="Twitter"
-              className="p-2 rounded-full bg-white border border-[#dcd8d3] text-pactPurple hover:bg-pactPurple hover:text-white transition"
-            >
-              <Twitter className="h-4 w-4" />
-            </a>
-            <a
-              href="#"
-              aria-label="Instagram"
-              className="p-2 rounded-full bg-white border border-[#dcd8d3] text-pactPurple hover:bg-pactPurple hover:text-white transition"
-            >
-              <Instagram className="h-4 w-4" />
-            </a>
+            {[Facebook, Twitter, Instagram].map((Icon, i) => (
+              <a
+                key={i}
+                href="#"
+                className="p-2 rounded-full bg-black border border-lime-400/40 text-lime-300 hover:bg-lime-400 hover:text-black transition-colors shadow-lg shadow-lime-400/20"
+              >
+                <Icon className="h-4 w-4" />
+              </a>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-[#d6cdd7] bg-white/60 backdrop-blur-sm text-sm text-center py-4 text-[#555]">
+      <div className="relative border-t border-lime-400/20 text-sm text-center py-4 text-gray-300 bg-black/70 backdrop-blur-sm">
         © {new Date().getFullYear()}{" "}
-        <span className="font-semibold text-pactPurple">Amar Jashore NGO</span>. All rights reserved.
-        <br />
-    
+        <span className="font-semibold bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
+          Amar Jashore NGO
+        </span>
+        . All rights reserved.
       </div>
     </footer>
   );

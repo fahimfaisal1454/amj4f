@@ -6,8 +6,8 @@ import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
 
 // THEME
-const HIGHLIGHT = "#C5FB5A";
-const PAGE_BG = "bg-gradient-to-br from-lime-200 via-lime-100 to-black/80";
+const LIME = "#C5FB5A";          // accent
+const FORM_GREEN = "#74B93D";    // requested form card color
 
 export default function Contact() {
   // ---- contact info (from backend) ----
@@ -84,33 +84,31 @@ export default function Contact() {
   // Build left-side info items
   const infoItems = [
     {
-      icon: <Mail className="mt-1 h-5 w-5" style={{ color: HIGHLIGHT }} />,
+      icon: <Mail className="mt-1 h-5 w-5" style={{ color: "#74b93d" }} />,
       label: "Email",
       content: (
         <a
           href={`mailto:${info.email || "info@amarjashore.org"}`}
-          className="font-medium hover:underline"
-          style={{ color: "black" }}
+          className="font-medium hover:underline text-black"
         >
           {loadingInfo ? "…" : info.email || "info@amarjashore.org"}
         </a>
       ),
     },
     {
-      icon: <Phone className="mt-1 h-5 w-5" style={{ color: HIGHLIGHT }} />,
+      icon: <Phone className="mt-1 h-5 w-5" style={{ color: "#74b93d" }}/>,
       label: "Phone",
       content: (
         <a
           href={`tel:${info.phone || "+880123456789"}`}
-          className="font-medium hover:underline"
-          style={{ color: "black" }}
+          className="font-medium hover:underline text-black"
         >
           {loadingInfo ? "…" : info.phone || "+880 1234-567-89"}
         </a>
       ),
     },
     {
-      icon: <MapPin className="mt-1 h-5 w-5" style={{ color: HIGHLIGHT }} />,
+      icon: <MapPin className="mt-1 h-5 w-5" style={{ color: "#74b93d" }} />,
       label: "Address",
       content: (
         <p className="font-medium text-black">
@@ -119,7 +117,7 @@ export default function Contact() {
       ),
     },
     {
-      icon: <Clock className="mt-1 h-5 w-5" style={{ color: HIGHLIGHT }} />,
+      icon: <Clock className="mt-1 h-5 w-5" style={{ color: "#74b93d" }} />,
       label: "Hours",
       content: (
         <p className="font-medium text-black">
@@ -132,12 +130,8 @@ export default function Contact() {
   return (
     <section
       id="contact"
-      className="scroll-mt-[72px] relative overflow-hidden py-12 text-gray-900"
+      className="scroll-mt-[72px] relative overflow-hidden py-12 bg-white text-gray-900"
     >
-      {/* Themed background */}
-      <div className={`absolute inset-0 ${PAGE_BG}`} />
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.35)_1px,transparent_0)] [background-size:18px_18px]" />
-
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-6xl px-6">
         {/* Header */}
@@ -160,7 +154,7 @@ export default function Contact() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-5">
           {/* Left Column */}
           <aside className="md:col-span-2 space-y-6">
-            <div className="rounded-xl border border-black/10 bg-white/95 p-6 shadow-[0_10px_26px_rgba(0,0,0,0.18)] backdrop-blur-sm">
+            <div className="rounded-xl border border-black/10 bg-white p-6 shadow-[0_10px_26px_rgba(0,0,0,0.12)]">
               <h2 className="text-xl font-bold text-black">Contact Information</h2>
               <p className="mt-1 text-black/70">
                 Reach us via email, phone, or visit our office.
@@ -180,7 +174,7 @@ export default function Contact() {
             </div>
 
             {/* Map */}
-            <div className="overflow-hidden rounded-xl border border-black/10 bg-white/95 shadow-[0_10px_26px_rgba(0,0,0,0.18)] backdrop-blur-sm">
+            <div className="overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_10px_26px_rgba(0,0,0,0.12)]">
               <iframe
                 title="Amar Jashore Map"
                 className="h-56 w-full"
@@ -194,30 +188,27 @@ export default function Contact() {
             </div>
           </aside>
 
-          {/* Right Column */}
+          {/* Right Column (FORM CARD IN GREEN) */}
           <div className="md:col-span-3">
-            <form
-              onSubmit={submit}
-              className="rounded-xl border border-black/10 bg-white/95 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)] backdrop-blur-sm"
-            >
-              <h2 className="text-xl font-bold text-black">Send us a message</h2>
-              <p className="mt-1 text-black/70">We usually reply within 1–2 business days.</p>
+            <form onSubmit={submit} className="contact-form-card p-6">
+              <h2 className="text-xl font-bold text-white">Send us a message</h2>
+              <p className="mt-1 text-white/90">We usually reply within 1–2 business days.</p>
 
               {/* Alerts */}
               {sent && (
-                <div className="mt-3 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-green-700 text-sm">
+                <div className="mt-3 rounded-md bg-white/20 border border-white/50 px-3 py-2 text-white text-sm">
                   ✅ Message sent successfully!
                 </div>
               )}
               {error && (
-                <div className="mt-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-red-700 text-sm">
+                <div className="mt-3 rounded-md bg-white/20 border border-white/50 px-3 py-2 text-white text-sm">
                   {error}
                 </div>
               )}
 
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="name" className="text-sm font-medium text-black/80">
+                  <label htmlFor="name" className="text-sm font-medium text-white">
                     Full Name
                   </label>
                   <input
@@ -227,14 +218,13 @@ export default function Contact() {
                     required
                     value={form.name}
                     onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 transition-shadow"
-                    style={{ boxShadow: "0 2px 0 rgba(0,0,0,0.04)" }}
+                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
                     placeholder="Your name"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="text-sm font-medium text-black/80">
+                  <label htmlFor="email" className="text-sm font-medium text-white">
                     Email
                   </label>
                   <input
@@ -244,14 +234,13 @@ export default function Contact() {
                     required
                     value={form.email}
                     onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 transition-shadow"
-                    style={{ boxShadow: "0 2px 0 rgba(0,0,0,0.04)" }}
+                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
                     placeholder="you@example.com"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="phone" className="text-sm font-medium text-black/80">
+                  <label htmlFor="phone" className="text-sm font-medium text-white">
                     Phone (optional)
                   </label>
                   <input
@@ -260,14 +249,13 @@ export default function Contact() {
                     type="tel"
                     value={form.phone}
                     onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 transition-shadow"
-                    style={{ boxShadow: "0 2px 0 rgba(0,0,0,0.04)" }}
+                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
                     placeholder="+880…"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="text-sm font-medium text-black/80">
+                  <label htmlFor="subject" className="text-sm font-medium text-white">
                     Subject
                   </label>
                   <input
@@ -276,14 +264,13 @@ export default function Contact() {
                     type="text"
                     value={form.subject}
                     onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 transition-shadow"
-                    style={{ boxShadow: "0 2px 0 rgba(0,0,0,0.04)" }}
+                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
                     placeholder="How can we help?"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label htmlFor="message" className="text-sm font-medium text-black/80">
+                  <label htmlFor="message" className="text-sm font-medium text-white">
                     Message
                   </label>
                   <textarea
@@ -293,8 +280,7 @@ export default function Contact() {
                     rows={5}
                     value={form.message}
                     onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 outline-none focus:ring-2 transition-shadow"
-                    style={{ boxShadow: "0 2px 0 rgba(0,0,0,0.04)" }}
+                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
                     placeholder="Write your message here…"
                   />
                 </div>
@@ -306,18 +292,18 @@ export default function Contact() {
                   disabled={submitting}
                   className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-semibold transition shadow-[0_6px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)] hover:-translate-y-0.5 disabled:opacity-70"
                   style={{
-                    backgroundColor: submitting ? "#d1d5db" : HIGHLIGHT,
+                    backgroundColor: submitting ? "#d1d5db" : LIME,
                     color: submitting ? "#111827" : "black",
                   }}
                   onMouseEnter={(e) => {
                     if (!submitting) {
                       e.currentTarget.style.backgroundColor = "black";
-                      e.currentTarget.style.color = HIGHLIGHT;
+                      e.currentTarget.style.color = LIME;
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!submitting) {
-                      e.currentTarget.style.backgroundColor = HIGHLIGHT;
+                      e.currentTarget.style.backgroundColor = LIME;
                       e.currentTarget.style.color = "black";
                     }
                   }}
@@ -325,7 +311,7 @@ export default function Contact() {
                   <Send className="h-4 w-4" />
                   {submitting ? "Sending…" : "Send Message"}
                 </button>
-                <span className="text-sm text-black/60">
+                <span className="text-sm text-white/90">
                   We’ll never share your contact details.
                 </span>
               </div>
@@ -333,6 +319,18 @@ export default function Contact() {
           </div>
         </div>
       </div>
+
+      {/* Styles for the green form card */}
+      <style>{`
+        .contact-form-card{
+          background-color: ${FORM_GREEN};
+          border: 2px solid ${LIME};
+          border-radius: 0.75rem;
+          box-shadow:
+            0 12px 28px rgba(0,0,0,0.15),
+            inset 0 1px 0 rgba(255,255,255,0.25);
+        }
+      `}</style>
     </section>
   );
 }

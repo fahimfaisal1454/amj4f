@@ -1,5 +1,6 @@
-// src/pages/ProgramsGrid/ProgramsGrid.jsx (or your current path)
+// src/pages/ProgramsGrid/ProgramsGrid.jsx
 import React from "react";
+import bgImage from "../../assets/backgrounds/green_bg.jpg";
 
 // API base (works with or without .env)
 const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
@@ -7,14 +8,12 @@ const fileUrl = (p) => (p ? (p.startsWith("http") ? p : `${API}${p}`) : "");
 const FALLBACK = "/src/assets/news/placeholder.jpg";
 
 // THEME
-const HIGHLIGHT = "#C5FB5A";
-const PAGE_BG = "bg-gradient-to-br from-lime-200 via-lime-100 to-black/80";
+const HIGHLIGHT = "#C5FB5A"; // lime accent
 
 export default function ProgramsGrid() {
   const [programs, setPrograms] = React.useState([]);
   const [active, setActive] = React.useState(null);
 
-  // Load programs from backend
   React.useEffect(() => {
     fetch(`${API}/api/programs/`)
       .then((r) => r.json())
@@ -24,10 +23,10 @@ export default function ProgramsGrid() {
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           .map((p) => ({
             tag: p.tag || "PROGRAM",
-            // default to lime chip; allow backend override if provided
-            tagColor: (p.tag_color?.trim() || "").length
-              ? p.tag_color
-              : "bg-[#C5FB5A] text-black",
+            tagColor:
+              (p.tag_color?.trim() || "").length
+                ? p.tag_color
+                : "bg-[#C5FB5A] text-black",
             title: p.title,
             desc: p.desc,
             body: p.body,
@@ -41,7 +40,6 @@ export default function ProgramsGrid() {
       });
   }, []);
 
-  // Close on Esc
   React.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setActive(null);
     window.addEventListener("keydown", onKey);
@@ -52,10 +50,16 @@ export default function ProgramsGrid() {
     <section
       id="programs"
       className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pt-12 pb-20 overflow-hidden"
+      style={{
+        // backgroundImage: `url(${bgImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
     >
-      {/* Themed background */}
-      <div className={`absolute inset-0 ${PAGE_BG}`} />
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.35)_1px,transparent_0)] [background-size:18px_18px]" />
+      {/* soft veil + subtle dot texture (matches AboutUs/News) */}
+      <div className="absolute inset-0 bg-white/40" />
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
 
       {/* Content */}
       <div className="relative max-w-container mx-auto px-4">
@@ -68,7 +72,7 @@ export default function ProgramsGrid() {
             <article
               key={`${p.title}-${i}`}
               onClick={() => setActive(p)}
-              className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-black/10 bg-white/95 backdrop-blur-sm shadow-[0_12px_30px_rgba(0,0,0,0.18)] hover:shadow-[0_18px_45px_rgba(0,0,0,0.28)] hover:-translate-y-1 transition-all"
+              className="flex cursor-pointer flex-col overflow-hidden rounded-xl pg-card hover:-translate-y-1 transition-all"
             >
               <img
                 src={p.image}
@@ -76,20 +80,20 @@ export default function ProgramsGrid() {
                 className="h-48 w-full object-cover"
                 onError={(e) => (e.currentTarget.src = FALLBACK)}
               />
-              <div className="flex-1 px-5 pt-4 pb-6 border-t border-black/10 bg-white/95">
+              <div className="flex-1 px-5 pt-4 pb-6 border-t border-[#C5FB5A]">
                 <span
                   className={`inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${p.tagColor}`}
                 >
                   {p.tag}
                 </span>
-                <h3 className="mt-3 text-[1.1rem] leading-snug font-semibold text-black">
+                <h3 className="mt-3 text-[1.1rem] leading-snug font-semibold text-white">
                   {p.title}
                 </h3>
-                <p className="mt-2 text-[0.95rem] text-neutral-800 leading-relaxed">
+                <p className="mt-2 text-[0.95rem] text-white/90 leading-relaxed">
                   {p.desc}
                 </p>
                 <div className="mt-3">
-                  <span className="inline-flex items-center text-sm font-semibold text-black/85 hover:underline">
+                  <span className="inline-flex items-center text-sm font-semibold text-white/90 hover:underline">
                     Read more →
                   </span>
                 </div>
@@ -169,6 +173,22 @@ export default function ProgramsGrid() {
           </div>
         </div>
       )}
+
+      {/* Solid green card style (same as AboutUs/News) */}
+      <style>{`
+        .pg-card{
+          background-color: #74B93D;             /* solid green */
+          border: 2px solid #C5FB5A;             /* lime border */
+          box-shadow:
+            0 12px 28px rgba(0,0,0,0.15),
+            inset 0 1px 0 rgba(255,255,255,0.25);
+        }
+        .pg-card:hover{
+          box-shadow:
+            0 18px 46px rgba(0,0,0,0.20),
+            0 0 0 4px rgba(197,251,90,0.28);     /* soft lime aura */
+        }
+      `}</style>
     </section>
   );
 }

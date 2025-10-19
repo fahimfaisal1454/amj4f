@@ -1,5 +1,6 @@
 // src/Pages/StoriesStrip/StoriesStrip.jsx
 import React from "react";
+import bgImage from "../../assets/backgrounds/green_bg.jpg";
 
 // Works with or without .env (VITE_API_BASE=http://127.0.0.1:8000)
 const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
@@ -8,13 +9,11 @@ const FALLBACK = "/src/assets/news/placeholder.jpg";
 
 // THEME
 const HIGHLIGHT = "#C5FB5A";
-const PAGE_BG = "bg-gradient-to-br from-lime-200 via-lime-100 to-black/80";
 
 export default function StoriesStrip() {
   const [items, setItems] = React.useState([]);
   const [active, setActive] = React.useState(null);
 
-  // fetch stories once
   React.useEffect(() => {
     fetch(`${API}/api/stories/`)
       .then((r) => r.json())
@@ -24,10 +23,10 @@ export default function StoriesStrip() {
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           .map((s) => ({
             tag: s.tag || "STORY",
-            // default to lime chip; allow backend override if provided
-            tagColor: (s.tag_color?.trim() || "").length
-              ? s.tag_color
-              : "bg-[#C5FB5A] text-black",
+            tagColor:
+              (s.tag_color?.trim() || "").length
+                ? s.tag_color
+                : "bg-[#C5FB5A] text-black",
             title: s.title,
             desc: s.desc,
             body: s.body,
@@ -39,7 +38,6 @@ export default function StoriesStrip() {
       .catch(() => setItems([]));
   }, []);
 
-  // close on ESC
   React.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setActive(null);
     window.addEventListener("keydown", onKey);
@@ -50,10 +48,16 @@ export default function StoriesStrip() {
     <section
       id="stories"
       className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pt-12 pb-20 overflow-hidden"
+      style={{
+        // backgroundImage: `url(${bgImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
     >
-      {/* Themed background */}
-      <div className={`absolute inset-0 ${PAGE_BG}`} />
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.35)_1px,transparent_0)] [background-size:18px_18px]" />
+      {/* soft veil + subtle dot texture (same treatment across pages) */}
+      <div className="absolute inset-0 bg-white/40" />
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
 
       {/* Content */}
       <div className="relative max-w-container mx-auto px-4">
@@ -66,7 +70,7 @@ export default function StoriesStrip() {
             <article
               key={`${s.title}-${i}`}
               onClick={() => setActive(s)}
-              className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-black/10 bg-white/95 backdrop-blur-sm shadow-[0_12px_30px_rgba(0,0,0,0.18)] hover:shadow-[0_18px_45px_rgba(0,0,0,0.28)] hover:-translate-y-1 transition-all"
+              className="flex cursor-pointer flex-col overflow-hidden rounded-xl ss-card hover:-translate-y-1 transition-all"
             >
               <img
                 src={s.image}
@@ -74,26 +78,27 @@ export default function StoriesStrip() {
                 className="h-48 w-full object-cover"
                 onError={(e) => (e.currentTarget.src = FALLBACK)}
               />
-              <div className="flex-1 px-5 pt-4 pb-6 border-t border-black/10 bg-white/95">
+              <div className="flex-1 px-5 pt-4 pb-6 border-t border-[#C5FB5A]">
                 <span
                   className={`inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${s.tagColor}`}
                 >
                   {s.tag}
                 </span>
-                <h3 className="mt-3 text-[1.1rem] leading-snug font-semibold text-black">
+                <h3 className="mt-3 text-[1.1rem] leading-snug font-semibold text-white">
                   {s.title}
                 </h3>
-                <p className="mt-2 text-[0.95rem] text-neutral-800 leading-relaxed">
+                <p className="mt-2 text-[0.95rem] text-white/90 leading-relaxed">
                   {s.desc}
                 </p>
-                {/* keep the link, but intercept to open modal */}
+
+                {/* open modal via link as well */}
                 <a
                   href={s.href}
                   onClick={(e) => {
                     e.preventDefault();
                     setActive(s);
                   }}
-                  className="mt-3 inline-flex font-semibold text-black/85 hover:underline"
+                  className="mt-3 inline-flex font-semibold text-white/90 hover:underline"
                 >
                   Read story →
                 </a>
@@ -177,6 +182,22 @@ export default function StoriesStrip() {
           </div>
         </div>
       )}
+
+      {/* Solid green card style (consistent with other sections) */}
+      <style>{`
+        .ss-card{
+          background-color: #74B93D;             /* solid green */
+          border: 2px solid #C5FB5A;             /* lime border */
+          box-shadow:
+            0 12px 28px rgba(0,0,0,0.15),
+            inset 0 1px 0 rgba(255,255,255,0.25);
+        }
+        .ss-card:hover{
+          box-shadow:
+            0 18px 46px rgba(0,0,0,0.20),
+            0 0 0 4px rgba(197,251,90,0.28);     /* soft lime aura */
+        }
+      `}</style>
     </section>
   );
 }

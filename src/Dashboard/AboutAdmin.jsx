@@ -81,6 +81,9 @@ export default function AboutAdmin() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // NEW: which section is open (Overview | Stats | MVV)
+  const [active, setActive] = useState("overview");
+
   // hydrate from API
   useEffect(() => {
     if (!current) return;
@@ -172,126 +175,17 @@ export default function AboutAdmin() {
 
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-pactPurple">About Section</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Manage your About page content, imagery, key stats, and mission/vision/values.
-        </p>
-      </div>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-pactPurple">About Section</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Manage your About page content, imagery, key stats, and mission/vision/values.
+          </p>
+        </div>
 
-      {loading && <div>Loading…</div>}
-      {error && <div className="text-red-600">{String(error)}</div>}
-
-      {!loading && !error && (
-        <div className="bg-white border rounded-xl p-6 space-y-8 max-w-5xl shadow-sm">
-          {/* Heading & Description */}
-          <SectionHeader title="Overview" />
-          <div className="grid gap-5 lg:grid-cols-2">
-            <Input name="heading" label="Heading" value={form.heading} onChange={change} required />
-            <div className="lg:col-span-2">
-              <Label strong>Description</Label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={change}
-                className="w-full rounded-lg border px-3 py-2 min-h-[120px]"
-                placeholder="About description…"
-              />
-            </div>
-
-            {/* Main Image */}
-            <div>
-              <Label strong>Upload Main Image</Label>
-              <input ref={fileMain} type="file" accept="image/*" className="block w-full text-sm" />
-              <p className="text-xs text-gray-500 mt-1">PNG/JPG. Recommended width ≥ 1600px.</p>
-            </div>
-            <PreviewCard title="Main Preview" src={previewMain} />
-          </div>
-
-          {/* Stats */}
-          <SectionHeader title="Key Stats" subtitle="Showcase your impact with up to 4 stats." />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="rounded-lg border p-3">
-                <Input
-                  name={`stat${i}_number`}
-                  label={`Stat ${i} Number`}
-                  value={form[`stat${i}_number`]}
-                  onChange={change}
-                />
-                <Input
-                  name={`stat${i}_label`}
-                  label={`Stat ${i} Label`}
-                  value={form[`stat${i}_label`]}
-                  onChange={change}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Mission / Vision / Values */}
-          <SectionHeader title="Mission, Vision & Values" />
-          <div className="grid gap-6">
-            <MVVSection
-              title="Mission"
-              titleName="mission_title"
-              descName="mission_description"
-              fileRef={fileMission}
-              preview={previewMission}
-              form={form}
-              onChange={change}
-            />
-            <MVVSection
-              title="Vision"
-              titleName="vision_title"
-              descName="vision_description"
-              fileRef={fileVision}
-              preview={previewVision}
-              form={form}
-              onChange={change}
-            />
-            <MVVSection
-              title="Values"
-              titleName="values_title"
-              descName="values_description"
-              fileRef={fileValues}
-              preview={previewValues}
-              form={form}
-              onChange={change}
-            />
-          </div>
-
-          {/* CTAs */}
-          <SectionHeader title="Call to Action" />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              name="cta_primary_label"
-              label="Primary CTA Label"
-              value={form.cta_primary_label}
-              onChange={change}
-            />
-            <Input
-              name="cta_primary_href"
-              label="Primary CTA URL"
-              value={form.cta_primary_href}
-              onChange={change}
-            />
-            <Input
-              name="cta_secondary_label"
-              label="Secondary CTA Label"
-              value={form.cta_secondary_label}
-              onChange={change}
-            />
-            <Input
-              name="cta_secondary_href"
-              label="Secondary CTA URL"
-              value={form.cta_secondary_href}
-              onChange={change}
-            />
-          </div>
-
-          {/* Active toggle */}
-          <div className="flex items-center gap-2">
+        {/* Quick actions pinned to top on desktop */}
+        <div className="hidden sm:flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
             <input
               id="is_active"
               name="is_active"
@@ -300,24 +194,176 @@ export default function AboutAdmin() {
               onChange={changeBool}
               className="h-4 w-4 accent-pactPurple"
             />
-            <label htmlFor="is_active" className="text-sm font-semibold">
-              Active
-            </label>
+            Active
+          </label>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-lg bg-pactPurple px-4 py-2 text-white font-semibold hover:opacity-90 disabled:opacity-60"
+          >
+            {saving ? "Saving…" : current?.id ? "Save Changes" : "Create"}
+          </button>
+        </div>
+      </div>
+
+      {loading && <div>Loading…</div>}
+      {error && <div className="text-red-600">{String(error)}</div>}
+
+      {!loading && !error && (
+        <div className="bg-white border rounded-xl p-0 max-w-5xl shadow-sm overflow-hidden">
+          {/* NEW: segmented navigation */}
+          <SectionNav active={active} onChange={setActive} />
+
+          <div className="p-6 space-y-8">
+            {active === "overview" && (
+              <div className="space-y-6">
+                <SectionHeader title="Overview" />
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Input name="heading" label="Heading" value={form.heading} onChange={change} required />
+                  <div className="lg:col-span-2">
+                    <Label strong>Description</Label>
+                    <textarea
+                      name="description"
+                      value={form.description}
+                      onChange={change}
+                      className="w-full rounded-lg border px-3 py-2 min-h-[120px]"
+                      placeholder="About description…"
+                    />
+                  </div>
+
+                  {/* Main Image */}
+                  <div>
+                    <Label strong>Upload Main Image</Label>
+                    <input ref={fileMain} type="file" accept="image/*" className="block w-full text-sm" />
+                    <p className="text-xs text-gray-500 mt-1">PNG/JPG. Recommended width ≥ 1600px.</p>
+                  </div>
+                  <PreviewCard title="Main Preview" src={previewMain} />
+
+                  {/* CTAs */}
+                  <div className="lg:col-span-2">
+                    <SectionHeader title="Call to Action" />
+                  </div>
+                  <Input
+                    name="cta_primary_label"
+                    label="Primary CTA Label"
+                    value={form.cta_primary_label}
+                    onChange={change}
+                  />
+                  <Input
+                    name="cta_primary_href"
+                    label="Primary CTA URL"
+                    value={form.cta_primary_href}
+                    onChange={change}
+                  />
+                  <Input
+                    name="cta_secondary_label"
+                    label="Secondary CTA Label"
+                    value={form.cta_secondary_label}
+                    onChange={change}
+                  />
+                  <Input
+                    name="cta_secondary_href"
+                    label="Secondary CTA URL"
+                    value={form.cta_secondary_href}
+                    onChange={change}
+                  />
+                </div>
+              </div>
+            )}
+
+            {active === "stats" && (
+              <div className="space-y-6">
+                <SectionHeader title="Key Stats" subtitle="Showcase your impact with up to 4 stats." />
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="rounded-lg border p-3">
+                      <Input
+                        name={`stat${i}_number`}
+                        label={`Stat ${i} Number`}
+                        value={form[`stat${i}_number`]}
+                        onChange={change}
+                      />
+                      <Input
+                        name={`stat${i}_label`}
+                        label={`Stat ${i} Label`}
+                        value={form[`stat${i}_label`]}
+                        onChange={change}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {active === "mvv" && (
+              <div className="space-y-6">
+                <SectionHeader title="Mission, Vision & Values" />
+                <div className="grid gap-6">
+                  <MVVSection
+                    title="Mission"
+                    titleName="mission_title"
+                    descName="mission_description"
+                    fileRef={fileMission}
+                    preview={previewMission}
+                    form={form}
+                    onChange={change}
+                  />
+                  <MVVSection
+                    title="Vision"
+                    titleName="vision_title"
+                    descName="vision_description"
+                    fileRef={fileVision}
+                    preview={previewVision}
+                    form={form}
+                    onChange={change}
+                  />
+                  <MVVSection
+                    title="Values"
+                    titleName="values_title"
+                    descName="values_description"
+                    fileRef={fileValues}
+                    preview={previewValues}
+                    form={form}
+                    onChange={change}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="rounded-lg bg-pactPurple px-4 py-2 text-white font-semibold hover:opacity-90 disabled:opacity-60"
-            >
-              {saving ? "Saving…" : current?.id ? "Save Changes" : "Create"}
-            </button>
+          {/* NEW: sticky footer actions on mobile */}
+          <div className="border-t bg-gray-50/60 p-4 flex items-center justify-between gap-3 sticky bottom-0">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                id="is_active_mobile"
+                name="is_active"
+                type="checkbox"
+                checked={form.is_active}
+                onChange={changeBool}
+                className="h-4 w-4 accent-pactPurple"
+              />
+              Active
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="px-3 py-2 text-sm font-medium rounded-lg border hover:bg-gray-100"
+                type="button"
+              >
+                Back to Top
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="rounded-lg bg-pactPurple px-4 py-2 text-white font-semibold hover:opacity-90 disabled:opacity-60"
+              >
+                {saving ? "Saving…" : current?.id ? "Save Changes" : "Create"}
+              </button>
+            </div>
           </div>
 
           {msg && (
-            <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+            <div className="m-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
               {msg}
             </div>
           )}
@@ -328,6 +374,31 @@ export default function AboutAdmin() {
 }
 
 /* ============================== small pieces ============================== */
+
+function SectionNav({ active, onChange }) {
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    { id: "stats", label: "Key Stats" },
+    { id: "mvv", label: "Mission, Vision & Values" },
+  ];
+  return (
+    <div className="px-4 pt-3">
+      <div className="mx-2 rounded-xl bg-gray-100 p-1 flex gap-1 overflow-x-auto">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            className={`whitespace-nowrap flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition
+              ${active === t.id ? "bg-white shadow border" : "text-gray-600 hover:bg-white/70"}`}
+            type="button"
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function SectionHeader({ title, subtitle }) {
   return (
