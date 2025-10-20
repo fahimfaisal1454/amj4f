@@ -4,6 +4,10 @@ import { createBrowserRouter } from "react-router-dom";
 
 import Main from "../Layout/Main.jsx";
 import ErrorPage from "../Pages/ErrorPage/ErrorPage.jsx";
+import NewsSection from "../pages/NewsSection/NewsSection.jsx";
+import StoriesStrip from "../pages/StoriesStrip/StoriesStrip.jsx";
+
+
 
 // Dashboard pages
 import Login from "../Dashboard/Login.jsx";
@@ -29,6 +33,10 @@ const router = createBrowserRouter([
     path: "/login",
     element: <Login />,
   },
+
+{ path: "/news/:id", element: <NewsSection /> },
+{ path: "/stories/:id", element: <StoriesStrip /> },
+
   {
     element: <ProtectedRoute />,
     children: [

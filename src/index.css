@@ -1,3 +1,9 @@
+@import url('https://fonts.maateen.me/solaiman-lipi/font.css');
+@import url('https://fonts.cdnfonts.com/css/inter-tight');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+#root {
+  font-family:'Inter Tight', sans-serif, 'SolaimanLipi';
+}

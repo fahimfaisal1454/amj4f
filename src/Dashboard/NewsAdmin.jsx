@@ -6,10 +6,10 @@ import { ENDPOINTS, ABS } from "../api/endpoints";
 
 /* ============================== helpers ============================== */
 
-// Turn /media/... into absolute for <img src>
+// Make media paths absolute
 const fileUrl = (p) => (!p ? "" : ABS(p));
 
-// JWT helpers (reads from localStorage using VITE_TOKEN_STORAGE_KEY or "aj_tokens")
+// Read access token from localStorage
 function getAccessToken() {
   try {
     const key = import.meta.env.VITE_TOKEN_STORAGE_KEY || "aj_tokens";
@@ -25,12 +25,10 @@ function authHeaders({ isForm = false } = {}) {
   const token = getAccessToken();
   const h = {};
   if (token) h.Authorization = `Bearer ${token}`;
-  // IMPORTANT: don't set Content-Type for FormData
   if (!isForm) h["Content-Type"] = "application/json";
   return h;
 }
-
-// DRF error parser
+// DRF error helper
 async function parseError(res) {
   try {
     const j = await res.json();
@@ -45,23 +43,10 @@ async function parseError(res) {
   }
 }
 
-/** If editing with PUT and no new image chosen, fetch the existing image and attach as a File */
-async function fetchExistingImageFile(imagePathOrUrl) {
-  if (!imagePathOrUrl) return null;
-  const url = ABS(imagePathOrUrl);
-  const resp = await fetch(url, { credentials: "include" });
-  if (!resp.ok) return null;
-  const blob = await resp.blob();
-  const name =
-    url.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() ||
-    "image.jpg";
-  return new File([blob], name, { type: blob.type || "image/jpeg" });
-}
-
 /* ============================== main ============================== */
 
 export default function NewsAdmin() {
-  // GET uses read-only list
+  // GET (read-only)
   const { data, loading, error, refetch } = useApiQuery(ENDPOINTS.news, []);
   const items = useMemo(
     () => (Array.isArray(data) ? data : data?.results ?? []),
@@ -90,11 +75,11 @@ export default function NewsAdmin() {
     setSubmitError("");
   };
 
-  // DELETE -> writable endpoint
+  // DELETE
   const handleDelete = async (id) => {
     if (!confirm("Delete this news item?")) return;
     try {
-      const url = ABS(`${ENDPOINTS.newsManage}${id}/`); // /api/news/manage/<id>/
+      const url = ABS(`${ENDPOINTS.newsManage}${id}/`);
       const res = await fetch(url, {
         method: "DELETE",
         headers: authHeaders(),
@@ -107,45 +92,37 @@ export default function NewsAdmin() {
     }
   };
 
-  // CREATE/UPDATE -> writable endpoint
+  // CREATE / UPDATE
   const handleSubmit = async (payload) => {
     setSaving(true);
     setSubmitError("");
     try {
       const isEdit = Boolean(editing?.id);
-
-      // Correct URLs (DRF expects trailing slash)
       const url = isEdit
         ? ABS(`${ENDPOINTS.newsManage}${editing.id}/`)
         : ABS(ENDPOINTS.newsManage);
 
-      // Build multipart body
       const body = new FormData();
+      // Only append defined fields
       Object.entries(payload).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== "") body.append(k, v);
       });
 
-      // Require image on CREATE (model typically needs it)
       if (!isEdit && !payload.image) {
         setSubmitError("Please select an image.");
         setSaving(false);
         return;
       }
 
-      // If PUT and no new image chosen, attach existing image file
-      if (isEdit && !payload.image && editing?.image) {
-        const existingFile = await fetchExistingImageFile(editing.image);
-        if (existingFile) body.append("image", existingFile);
-      }
-
       const res = await fetch(url, {
-        method: isEdit ? "PUT" : "POST",
-        headers: authHeaders({ isForm: true }), // Authorization only
+        method: isEdit ? "PATCH" : "POST", // PATCH so unchanged fields are kept
+        headers: authHeaders({ isForm: true }),
         body,
         credentials: "include",
       });
 
       if (!res.ok) throw await parseError(res);
+
       closeModal();
       await refetch();
     } catch (e) {
@@ -173,8 +150,7 @@ export default function NewsAdmin() {
       {!loading && !error && (
         items.length === 0 ? (
           <div className="rounded border bg-white p-6 text-gray-600">
-            No news yet. Click <span className="font-semibold">“New News”</span>{" "}
-            to create one.
+            No news yet. Click <span className="font-semibold">“New News”</span> to create one.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -207,15 +183,10 @@ export default function NewsAdmin() {
 
 function NewsCard({ news, onEdit, onDelete }) {
   const imageUrl = fileUrl(news.image);
-
   return (
     <div className="rounded border bg-white shadow-sm overflow-hidden">
       {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={news.title || ""}
-          className="h-40 w-full object-cover"
-        />
+        <img src={imageUrl} alt={news.title || ""} className="h-40 w-full object-cover" />
       ) : (
         <div className="h-40 w-full bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
           No image
@@ -234,7 +205,7 @@ function NewsCard({ news, onEdit, onDelete }) {
           )}
         </div>
         <div className="text-xs text-gray-500 mt-1">
-          Published: {news.published_at || "—"}
+          Published: {news.published_at || news.date || "—"}
         </div>
         <div className="mt-3 flex items-center justify-end gap-2">
           <button
@@ -259,10 +230,12 @@ function NewsCard({ news, onEdit, onDelete }) {
 
 function NewsModal({ initial, onClose, onSubmit, saving, error }) {
   const isEdit = Boolean(initial?.id);
+
+  // 🔧 Use body (NOT content)
   const [title, setTitle] = useState(initial?.title || "");
   const [tag, setTag] = useState(initial?.tag || "");
-  const [content, setContent] = useState(initial?.content || "");
-  const [publishedAt, setPublishedAt] = useState(initial?.published_at || "");
+  const [body, setBody] = useState(initial?.body || ""); // <-- fixed
+  const [publishedAt, setPublishedAt] = useState(initial?.published_at || initial?.date || "");
   const [isActive, setIsActive] = useState(Boolean(initial?.is_active));
   const [previewUrl, setPreviewUrl] = useState(fileUrl(initial?.image) || "");
   const fileRef = useRef(null);
@@ -282,7 +255,7 @@ function NewsModal({ initial, onClose, onSubmit, saving, error }) {
     const payload = {
       title,
       tag,
-      content,
+      body,                 // <-- send as body
       published_at: publishedAt,
       is_active: isActive,
     };
@@ -296,12 +269,8 @@ function NewsModal({ initial, onClose, onSubmit, saving, error }) {
       <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl max-h-[80vh] overflow-y-auto">
         {/* Sticky header */}
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between border-b px-5 py-3">
-          <h2 className="text-lg font-semibold">
-            {isEdit ? "Edit News" : "New News"}
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            ✕
-          </button>
+          <h2 className="text-lg font-semibold">{isEdit ? "Edit News" : "New News"}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-5">
@@ -335,9 +304,9 @@ function NewsModal({ initial, onClose, onSubmit, saving, error }) {
               <label className="block text-sm font-medium mb-1">Content</label>
               <textarea
                 className="w-full rounded border px-3 py-2 min-h-[120px]"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="News content..."
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="News content…"
               />
             </div>
 
@@ -360,18 +329,14 @@ function NewsModal({ initial, onClose, onSubmit, saving, error }) {
                 onChange={(e) => setIsActive(e.target.checked)}
                 className="h-4 w-4 accent-pactPurple"
               />
-              <label htmlFor="isActive" className="text-sm font-medium">
-                Active
-              </label>
+              <label htmlFor="isActive" className="text-sm font-medium">Active</label>
             </div>
 
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium mb-1">Upload Image</label>
                 <input ref={fileRef} type="file" accept="image/*" className="block w-full text-sm" />
-                <p className="text-xs text-gray-500 mt-1">
-                  PNG/JPG. Recommended width ≥ 1600px.
-                </p>
+                <p className="text-xs text-gray-500 mt-1">PNG/JPG. Recommended width ≥ 1600px.</p>
               </div>
 
               <div>

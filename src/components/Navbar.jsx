@@ -1,18 +1,48 @@
 // src/components/Navbar.jsx
 import React, { useEffect, useMemo, useState } from "react";
 
+const TOKEN_KEY = import.meta.env.VITE_TOKEN_STORAGE_KEY || "aj_tokens";
+
+function hasToken() {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    if (!raw) return false;
+    if (raw.startsWith("{")) {
+      const obj = JSON.parse(raw);
+      return Boolean(obj?.access || obj?.token);
+    }
+    return Boolean(raw);
+  } catch {
+    return false;
+  }
+}
+
 export default function Navbar() {
   // --- auth state
-  const [authed, setAuthed] = useState(!!localStorage.getItem("token"));
+  const [authed, setAuthed] = useState(hasToken());
+
   useEffect(() => {
-    const onStorage = () => setAuthed(!!localStorage.getItem("token"));
+    const onStorage = () => setAuthed(hasToken());
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
   const handleLogout = () => {
+    // Clear all possible auth tokens
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem("token");
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+
     setAuthed(false);
-    window.location.assign("/");
+
+    // ✅ If user is on /admin or another protected route, send them home
+    if (location.pathname.startsWith("/admin")) {
+      window.location.assign("/");
+    } else {
+      // Otherwise, just refresh and stay on homepage
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   // --- UI
