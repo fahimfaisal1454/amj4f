@@ -36,19 +36,19 @@ export default function Navbar() {
 
     setAuthed(false);
 
-    // ✅ If user is on /admin or another protected route, send them home
+    // If user is on /admin or another protected route, send them home
     if (location.pathname.startsWith("/admin")) {
       window.location.assign("/");
     } else {
-      // Otherwise, just refresh and stay on homepage
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: prefersReduce ? "auto" : "smooth" });
     }
   };
 
   // --- UI
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // --- links
+  // --- links (hashes so they work on the homepage sections)
   const links = useMemo(
     () => [
       { href: "#home", label: "Home" },
@@ -61,28 +61,39 @@ export default function Navbar() {
     []
   );
 
-  // --- smooth scroll
+  // --- smooth scroll (works with fixed header + respects reduced motion)
   const handleNavClick = (e, href) => {
-    if (!href?.startsWith("#")) return;
+    if (!href?.startsWith("#")) return; // external link, ignore
     e.preventDefault();
+
+    // If we're not on the homepage layout, just go there with the hash
+    if (location.pathname !== "/") {
+      window.location.assign("/" + href);
+      return;
+    }
+
     const target = document.querySelector(href);
     if (!target) return;
+
     const header = document.querySelector("header");
-    const offset = (header?.offsetHeight || 96) + 8;
+    const offset = (header?.offsetHeight || 72) + 8;
     const y = target.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top: y, behavior: "smooth" });
+
+    const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: y, behavior: prefersReduce ? "auto" : "smooth" });
+
     setMobileOpen(false);
   };
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-black shadow-lg">
-      <nav className="flex items-center justify-between px-6 py-3 lg:px-16">
+      <nav className="flex items-center justify-between px-6 py-3 lg:px-16" aria-label="Primary">
         {/* Left: Logo */}
         <a
           href="#home"
-          onClick={(e) => handleNavClick(e, "#home")}
           className="flex items-center gap-3 group"
           aria-label="Home"
+          onClick={(e) => handleNavClick(e, "#home")}
         >
           <div className="relative">
             <div className="absolute inset-0 bg-lime-400/30 rounded-full blur-md group-hover:blur-lg transition-all duration-300" />
@@ -148,13 +159,14 @@ export default function Navbar() {
             onClick={() => setMobileOpen((v) => !v)}
             className="inline-flex items-center justify-center rounded-lg p-3 text-white bg-gradient-to-r from-lime-600 to-blue-600 hover:from-lime-500 hover:to-blue-500 transform hover:scale-105 transition-all duration-300"
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? (
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             ) : (
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
