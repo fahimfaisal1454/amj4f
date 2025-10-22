@@ -125,7 +125,7 @@ export default function NewsSection() {
             </div>
           )}
 
-          {/* body */}
+          {/* body #*/}
           <article className="mt-5 prose max-w-none leading-7 text-justify prose-p:my-4 prose-a:underline">
             <div dangerouslySetInnerHTML={{ __html: news.bodyHtml }} />
           </article>
