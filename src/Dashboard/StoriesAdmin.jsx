@@ -51,9 +51,19 @@ async function fetchExistingImageBlob(imagePathOrUrl) {
   const blob = await resp.blob();
   // try to derive a filename from the URL
   const nameFromUrl =
-    url.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() || "image.jpg";
+    url.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() ||
+    "image.jpg";
   return new File([blob], nameFromUrl, { type: blob.type || "image/jpeg" });
 }
+
+/** CSS-in-JS helper: clamp text to N lines without Tailwind plugin */
+const clamp = (lines) => ({
+  display: "-webkit-box",
+  WebkitLineClamp: lines,
+  WebkitBoxOrient: "vertical",
+  overflow: "hidden",
+  wordBreak: "break-word",
+});
 
 /* ---------- Component ---------- */
 
@@ -131,7 +141,7 @@ export default function StoriesAdmin() {
         if (existingFile) body.append("image", existingFile);
       }
 
-      // You said you want to PUT. This will now work because we ensure `image` is present.
+      // Use PUT for edits, POST for creates
       const method = isEdit ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -217,21 +227,40 @@ function StoryCard({ story, onEdit, onDelete }) {
         </div>
       )}
       <div className="p-3">
-        <div className="text-[10px] px-2 py-0.5 rounded bg-gray-200 inline-block">
+        <div
+          className="text-[10px] px-2 py-0.5 rounded bg-gray-200 inline-block max-w-full"
+          style={clamp(1)}
+          title={story.tag}
+        >
           {story.tag}
         </div>
-        <div className="font-semibold mt-1">{story.title || "Untitled"}</div>
-        <div className="text-sm text-gray-600 mt-1">
+
+        <div
+          className="font-semibold mt-1 break-words"
+          style={clamp(2)}
+          title={story.title}
+        >
+          {story.title || "Untitled"}
+        </div>
+
+        <div
+          className="text-sm text-gray-600 mt-1 break-words"
+          style={clamp(6)}
+          title={story.desc}
+        >
           {story.desc || "No description"}
         </div>
+
         {story.href && (
           <a
             href={story.href}
-            className="text-xs text-indigo-600 underline mt-1 inline-block"
+            className="text-xs text-indigo-600 underline mt-1 inline-block truncate max-w-full"
+            title={story.href}
           >
             Link
           </a>
         )}
+
         <div className="text-xs mt-1">
           {story.is_active ? (
             <span className="text-green-600 font-semibold">Active</span>
@@ -239,6 +268,7 @@ function StoryCard({ story, onEdit, onDelete }) {
             <span className="text-gray-500">Inactive</span>
           )}
         </div>
+
         <div className="mt-3 flex items-center justify-end gap-2">
           <button
             onClick={onEdit}
@@ -415,11 +445,7 @@ function StoryModal({ initial, onClose, onSubmit, saving, error }) {
               disabled={saving}
               className="rounded bg-pactPurple px-4 py-2 text-white font-semibold hover:opacity-90 disabled:opacity-60"
             >
-              {saving
-                ? "Saving…"
-                : isEdit
-                ? "Save Changes"
-                : "Create Story"}
+              {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Story"}
             </button>
           </div>
         </form>

@@ -31,17 +31,26 @@ export default function Sidebar() {
   const items = [
     { to: "/", label: "Home" },
     { to: "/admin", label: "Overview" },
+    { to: "/admin/about", label: "About" },
     { to: "/admin/banners", label: "Banners" },
     { to: "/admin/news", label: "News" },
     { to: "/admin/programs", label: "Programs" },
     { to: "/admin/stories", label: "Stories" },
-    { to: "/admin/about", label: "About" },
     { to: "/admin/contact-info", label: "Contact Info" },
     { to: "/admin/contacts", label: "Contact Messages" },
   ];
 
   return (
-    <aside className="flex flex-col h-screen w-[250px] bg-black text-[#C5FB5A] border-r border-[#222] shadow-lg">
+    <aside
+      className="
+        sticky top-0 left-0
+        flex flex-col flex-none
+        w-[250px] h-[100dvh]  /* fills viewport height on all devices */
+        bg-black text-[#C5FB5A]
+        border-r border-[#222] shadow-lg
+        z-40
+      "
+    >
       {/* Header */}
       <div className="p-5 border-b border-[#222] text-center">
         <h2 className="text-3xl font-extrabold bg-gradient-to-r from-lime-400 to-green-400 bg-clip-text text-transparent">
@@ -49,7 +58,7 @@ export default function Sidebar() {
         </h2>
       </div>
 
-      {/* Nav Links */}
+      {/* Nav Links (own scroll) */}
       <nav className="flex-1 overflow-y-auto mt-6 space-y-1 px-3">
         {items.map((it) => (
           <Item key={it.to} to={it.to}>
