@@ -9,7 +9,7 @@ const FALLBACK = "/src/assets/news/placeholder.jpg";
 
 // THEME close to blog.brac.net look
 const TAG_COLOR = "#74B93D";   // magenta-ish for categories
-const DIVIDER   = "#74B93D";   // thin orange line below image
+const DIVIDER   = "#74B93D";   // thin green line below image
 
 /* ========================== Helpers ========================== */
 const formatDate = (d) => {
@@ -197,7 +197,7 @@ export default function StoriesStrip() {
                     onError={(e) => (e.currentTarget.src = FALLBACK)}
                   />
                   {/* thin divider below image */}
-                  <div className="h-[4px] w-full" style={{ backgroundColor: DIVIDER }} />
+                  <div className="h-[8px] w-full" style={{ backgroundColor: DIVIDER }} />
                 </div>
               </Link>
 
