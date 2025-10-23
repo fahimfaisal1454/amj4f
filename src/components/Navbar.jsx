@@ -36,8 +36,8 @@ export default function Navbar() {
 
     setAuthed(false);
 
-    // If user is on /admin or another protected route, send them home
-    if (location.pathname.startsWith("/admin")) {
+    // If user is on /dashboard or another protected route, send them home
+    if (location.pathname.startsWith("/dashboard")) {
       window.location.assign("/");
     } else {
       const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -136,8 +136,9 @@ export default function Navbar() {
             </a>
           ) : (
             <>
+              {/* ✅ Fixed link here */}
               <a
-                href="/admin"
+                href="/dashboard"
                 className="relative overflow-hidden rounded-full bg-[#43850d] px-6 py-2 text-sm font-bold text-white shadow-lg hover:shadow-blue-500/30 transform hover:scale-105 transition-all duration-300 group"
               >
                 <span className="relative z-10">Dashboard</span>
@@ -200,8 +201,9 @@ export default function Navbar() {
               </a>
             ) : (
               <>
+                {/* ✅ Fixed link here */}
                 <a
-                  href="/admin"
+                  href="/dashboard"
                   onClick={() => setMobileOpen(false)}
                   className="block w-full text-center rounded-full bg-gradient-to-r from-blue-600 to-lime-500 px-6 py-3 text-base font-bold text-white shadow-lg hover:shadow-blue-500/30 transform hover:scale-105 transition-all duration-300"
                 >

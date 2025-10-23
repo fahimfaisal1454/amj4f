@@ -1,10 +1,9 @@
 // src/pages/ProgramsGrid/ProgramsGrid.jsx
 import React from "react";
 import bgImage from "../../assets/backgrounds/green_bg.jpg";
+import { ABS } from "../../api/endpoints"; // ← use shared absolute-URL helper
 
-// API base (works with or without .env)
-const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
-const fileUrl = (p) => (p ? (p.startsWith("http") ? p : `${API}${p}`) : "");
+const fileUrl = (p) => (!p ? "" : ABS(p));
 const FALLBACK = "/src/assets/news/placeholder.jpg";
 
 // THEME
@@ -15,7 +14,7 @@ export default function ProgramsGrid() {
   const [active, setActive] = React.useState(null);
 
   React.useEffect(() => {
-    fetch(`${API}/api/programs/`)
+    fetch(ABS(`/api/programs/`))
       .then((r) => r.json())
       .then((rows) => {
         const mapped = (rows || [])

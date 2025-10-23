@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 import React from "react";
-const API = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+import { ABS } from "../../api/endpoints"; // ← use shared absolute-URL helper
 
 const FALLBACK = [
   { image: "/src/assets/hero/slide1.jpg", title: "Blood Donation Saves Lives", body: "…", cta:{label:"Learn more", href:"#about"} },
@@ -16,15 +16,15 @@ export default function Home() {
   React.useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`${API}/api/banners/`);
+        const r = await fetch(ABS(`/api/banners/`));
         if (!r.ok) return;
         const json = await r.json();
         const rows = Array.isArray(json) ? json : (json?.results || []);
         if (!rows.length) return;
 
         const mapped = rows.map((b) => ({
-          image: b.image_url || b.image,
-          mobile: b.mobile_image_url || b.mobile_image,
+          image: ABS(b.image_url || b.image),
+          mobile: ABS(b.mobile_image_url || b.mobile_image),
           title: b.title,
           body: b.caption,
           cta: { label: b.cta_label, href: b.cta_href || "#" },

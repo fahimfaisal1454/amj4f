@@ -1,9 +1,7 @@
 // src/pages/Contact/Contact.jsx
 import React from "react";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
-
-// Works with or without .env
-const API = import.meta.env?.VITE_API_BASE || "http://127.0.0.1:8000";
+import { ABS } from "../../api/endpoints"; // ← shared absolute-URL helper
 
 // THEME
 const LIME = "#C5FB5A";          // accent
@@ -33,7 +31,7 @@ export default function Contact() {
 
   // Fetch contact info once
   React.useEffect(() => {
-    fetch(`${API}/api/contact-info/`)
+    fetch(ABS(`/api/contact-info/`))
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
@@ -61,7 +59,7 @@ export default function Contact() {
     setSent(false);
 
     try {
-      const res = await fetch(`${API}/api/contact/`, {
+      const res = await fetch(ABS(`/api/contact/`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

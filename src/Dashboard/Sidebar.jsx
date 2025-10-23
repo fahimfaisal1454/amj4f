@@ -30,14 +30,14 @@ export default function Sidebar() {
 
   const items = [
     { to: "/", label: "Home" },
-    { to: "/admin", label: "Overview" },
-    { to: "/admin/about", label: "About" },
-    { to: "/admin/banners", label: "Banners" },
-    { to: "/admin/news", label: "News" },
-    { to: "/admin/programs", label: "Programs" },
-    { to: "/admin/stories", label: "Stories" },
-    { to: "/admin/contact-info", label: "Contact Info" },
-    { to: "/admin/contacts", label: "Contact Messages" },
+    { to: "/dashboard", label: "Overview" },
+    { to: "/dashboard/about", label: "About" },
+    { to: "/dashboard/banners", label: "Banners" },
+    { to: "/dashboard/news", label: "News" },
+    { to: "/dashboard/programs", label: "Programs" },
+    { to: "/dashboard/stories", label: "Stories" },
+    { to: "/dashboard/contact-info", label: "Contact Info" },
+    { to: "/dashboard/contacts", label: "Contact Messages" },
   ];
 
   return (

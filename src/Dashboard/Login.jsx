@@ -4,7 +4,7 @@ import { useAuth } from "../api/hooks";
 import { isLoggedIn } from "../api/auth";
 
 export default function Login() {
-  if (isLoggedIn()) return <Navigate to="/admin" replace />;
+  if (isLoggedIn()) return <Navigate to="/dashboard" replace />;
 
   const nav = useNavigate();
   const { login } = useAuth();
@@ -18,7 +18,7 @@ export default function Login() {
     setErr("");
     try {
       await login(form.username, form.password); // backend expects username+password
-      nav("/admin");
+      nav("/dashboard");
     } catch {
       setErr("Invalid credentials");
     } finally {

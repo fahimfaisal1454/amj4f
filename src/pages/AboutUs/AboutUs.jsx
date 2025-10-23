@@ -1,12 +1,12 @@
 // src/pages/AboutUs/AboutUs.jsx
 import React from "react";
+import { ABS } from "../../api/endpoints"; // ← shared absolute-URL helper
 
-const API = import.meta.env.VITE_API_BASE || "http://localhost:8000";
-const fileUrl = (p) => (p ? `${API}${p}` : "");
+const fileUrl = (p) => (!p ? "" : ABS(p));
 
 // THEME
 const ACCENT = "#C5FB5A"; // lime accent
-const BRAND  = "#74B93D"; // green brand
+const BRAND  = "#74B93D"; // greennnn brand
 
 export default function AboutUs() {
   const [about, setAbout] = React.useState(null);
@@ -15,7 +15,7 @@ export default function AboutUs() {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    fetch(`${API}/api/about/`)
+    fetch(ABS(`/api/about/`))
       .then((r) => r.json())
       .then((data) => {
         if (!data || Object.keys(data).length === 0) return;
@@ -42,10 +42,7 @@ export default function AboutUs() {
   }
 
   return (
-    <section
-      id="about"
-      className="relative overflow-hidden py-12"
-    >
+    <section id="about" className="relative overflow-hidden py-12">
       {/* page texture */}
       <div className="absolute inset-0 bg-white/50" />
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
@@ -61,9 +58,7 @@ export default function AboutUs() {
             <h1 className="mt-1 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.05] tracking-tight">
               <span
                 className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage: `linear-gradient(90deg, ${ACCENT}, #7dfc8e)`,
-                }}
+                style={{ backgroundImage: `linear-gradient(90deg, ${ACCENT}, #7dfc8e)` }}
               >
                 {about?.heading || "About Us"}
               </span>
@@ -75,7 +70,6 @@ export default function AboutUs() {
               </p>
             )}
 
-            {/* CTAs if present */}
             {(about?.cta_primary_label || about?.cta_secondary_label) && (
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 {about?.cta_primary_label && about?.cta_primary_href && (
@@ -167,7 +161,6 @@ export default function AboutUs() {
               title={about?.vision_title}
               body={about?.vision_description}
               image={fileUrl(about?.vision_image)}
-              // flip layout for variety
               reverse
               accent={ACCENT}
               brand={BRAND}
@@ -196,7 +189,9 @@ export default function AboutUs() {
 function Block({ kicker, title, body, image, reverse = false, accent, brand }) {
   return (
     <article
-      className={`grid items-center gap-8 lg:gap-10 ${reverse ? "lg:grid-cols-[1fr_520px]" : "lg:grid-cols-[520px_1fr]"}`}
+      className={`grid items-center gap-8 lg:gap-10 ${
+        reverse ? "lg:grid-cols-[1fr_520px]" : "lg:grid-cols-[520px_1fr]"
+      }`}
     >
       {/* image */}
       <div className={`${reverse ? "order-last lg:order-first" : ""}`}>
@@ -212,7 +207,10 @@ function Block({ kicker, title, body, image, reverse = false, accent, brand }) {
 
       {/* text */}
       <div className={`${reverse ? "order-first lg:order-last" : ""}`}>
-        <p className="text-[11px] font-extrabold tracking-[0.2em] uppercase" style={{ color: brand }}>
+        <p
+          className="text-[11px] font-extrabold tracking-[0.2em] uppercase"
+          style={{ color: brand }}
+        >
           {kicker}
         </p>
         {title && (

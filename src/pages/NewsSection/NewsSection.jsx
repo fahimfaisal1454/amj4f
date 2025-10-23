@@ -1,9 +1,9 @@
 // src/pages/NewsSection/NewsSection.jsx
 import React from "react";
 import { Link, useParams, useLocation } from "react-router-dom";
+import { ABS } from "../../api/endpoints"; // ← use shared absolute-URL helper
 
-const API_BASE = "http://127.0.0.1:8000";
-const fileUrl = (p) => (!p ? "" : p.startsWith("http") ? p : `${API_BASE}${p}`);
+const fileUrl = (p) => (!p ? "" : ABS(p));
 
 const TAG_COLOR = "#74B93D";   // magenta (tags)
 const DIVIDER   = "#74B93D";   // thin orange line under image
@@ -57,7 +57,7 @@ export default function NewsSection() {
       let cancel = false;
       (async () => {
         try {
-          const res = await fetch(`${API_BASE}/api/news/${encodeURIComponent(id)}/`);
+          const res = await fetch(ABS(`/api/news/${encodeURIComponent(id)}/`));
           const n = await res.json();
           if (cancel) return;
           const galleryRaw = n.images || n.gallery || n.photos || [];
@@ -125,7 +125,7 @@ export default function NewsSection() {
             </div>
           )}
 
-          {/* body #*/}
+          {/* body */}
           <article className="mt-5 prose max-w-none leading-7 text-justify prose-p:my-4 prose-a:underline">
             <div dangerouslySetInnerHTML={{ __html: news.bodyHtml }} />
           </article>
@@ -149,7 +149,7 @@ export default function NewsSection() {
   const [visible, setVisible] = React.useState(9);
 
   React.useEffect(() => {
-    fetch(`${API_BASE}/api/news/`)
+    fetch(ABS(`/api/news/`))
       .then((r) => r.json())
       .then((rows) => {
         const mapped = (rows || [])

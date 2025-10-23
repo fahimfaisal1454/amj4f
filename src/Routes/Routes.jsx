@@ -40,14 +40,14 @@ const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
-      { path: "/admin", element: <AdminHome /> },
-      { path: "/admin/banners", element: <BannersAdmin /> },
-      { path: "/admin/news", element: <NewsAdmin /> },
-      { path: "/admin/programs", element: <ProgramsAdmin /> },
-      { path: "/admin/stories", element: <StoriesAdmin /> },
-      { path: "/admin/about", element: <AboutAdmin /> },
-      { path: "/admin/contact-info", element: <ContactInfoAdmin /> },
-      { path: "/admin/contacts", element: <ContactsAdmin /> },
+      { path: "/dashboard", element: <AdminHome /> },
+      { path: "/dashboard/banners", element: <BannersAdmin /> },
+      { path: "/dashboard/news", element: <NewsAdmin /> },
+      { path: "/dashboard/programs", element: <ProgramsAdmin /> },
+      { path: "/dashboard/stories", element: <StoriesAdmin /> },
+      { path: "/dashboard/about", element: <AboutAdmin /> },
+      { path: "/dashboard/contact-info", element: <ContactInfoAdmin /> },
+      { path: "/dashboard/contacts", element: <ContactsAdmin /> },
     ],
   },
 ]);
