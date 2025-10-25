@@ -48,20 +48,13 @@ export default function AboutUs() {
       <div className="relative max-w-7xl mx-auto px-4 text-black">
         {/* ========= Header (no hero image) ========= */}
         <header className="relative">
-          <p
-            className="text-[11px] font-extrabold tracking-[0.2em] uppercase"
-            style={{ color: "#1b5930" }}
-          >
-            About
-          </p>
-
-<h1 className="mt-1 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.05] tracking-tight text-green-900">
-  {about?.heading || "Discover Amar Jashore"}
-</h1>
+          <h1 className="mt-1 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.05] tracking-tight text-green-700">
+            {about?.heading || "Discover Amar Jashore"}
+          </h1>
 
           {/* preserve backend line breaks + justify */}
           {about?.description && (
-            <div className="mt-4 text-neutral-800 leading-relaxed md:text-[15.5px] whitespace-pre-line text-justify">
+            <div className="mt-4 text-neutral-800 leading-relaxed md:text-[17px] whitespace-pre-line text-justify">
               {about.description}
             </div>
           )}
@@ -116,7 +109,6 @@ export default function AboutUs() {
           {/* Mission (image left, text right) */}
           {(about?.mission_title || about?.mission_description) && (
             <Block
-              kicker="Our Mission"
               title={about?.mission_title}
               body={about?.mission_description}
               image={fileUrl(about?.mission_image)}
@@ -128,7 +120,6 @@ export default function AboutUs() {
           {/* Vision (TEXT LEFT, IMAGE RIGHT on large screens) */}
           {(about?.vision_title || about?.vision_description) && (
             <Block
-              kicker="Our Vision"
               title={about?.vision_title}
               body={about?.vision_description}
               image={fileUrl(about?.vision_image)}
@@ -141,7 +132,6 @@ export default function AboutUs() {
           {/* Values (image left, text right) */}
           {(about?.values_title || about?.values_description) && (
             <Block
-              kicker="Our Values"
               title={about?.values_title}
               body={about?.values_description}
               image={fileUrl(about?.values_image)}
@@ -157,10 +147,18 @@ export default function AboutUs() {
 
 /* ----------------------------- Small Pieces ----------------------------- */
 
-function Block({ kicker, title, body, image, reverse = false, accent, brand }) {
+function Block({
+  kicker,
+  title,
+  body,
+  image,
+  reverse = false,
+  accent,
+  brand,
+}) {
   return (
     <article
-      className={`grid items-center gap-8 lg:gap-10 ${
+      className={`grid items-center gap-6 sm:gap-8 lg:gap-10 ${
         reverse ? "lg:grid-cols-[1fr_520px]" : "lg:grid-cols-[520px_1fr]"
       }`}
     >
@@ -170,7 +168,7 @@ function Block({ kicker, title, body, image, reverse = false, accent, brand }) {
           {image ? (
             <img
               src={image}
-              alt={kicker}
+              alt={title || kicker || "About image"}
               className="h-[260px] w-full object-cover sm:h-[320px]"
             />
           ) : (
@@ -185,21 +183,28 @@ function Block({ kicker, title, body, image, reverse = false, accent, brand }) {
 
       {/* text */}
       <div className={reverse ? "lg:order-first" : ""}>
-        <p
-          className="text-[11px] font-extrabold tracking-[0.2em] uppercase"
-          style={{ color: brand }}
-        >
-          {kicker}
-        </p>
+        {/* render kicker only when provided */}
+        {kicker ? (
+          <p
+            className="text-[11px] font-extrabold tracking-[0.2em] uppercase"
+            style={{ color: brand }}
+          >
+            {kicker}
+          </p>
+        ) : null}
+
         {title && (
-          <h3 className="mt-2 text-2xl sm:text-3xl font-bold text-[#0f172a]">
+          <h3 className="mt-1 text-2xl sm:text-3xl font-bold text-green-700">
             {title}
           </h3>
         )}
+
         {body && (
-          <p className="mt-3 text-neutral-700 leading-relaxed md:text-[15.5px] text-justify">
+          // IMPORTANT: preserve backend line breaks and justify
+          // so English and Bangla (or multi-paragraph) content get proper spacing
+          <div className="mt-2 text-neutral-700 leading-relaxed md:text-[15.5px] whitespace-pre-line text-justify">
             {body}
-          </p>
+          </div>
         )}
       </div>
     </article>
