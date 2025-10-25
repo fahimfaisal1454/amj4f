@@ -9,7 +9,7 @@ import NewsSection from "../pages/NewsSection/NewsSection.jsx";
 import ProgramsGrid from "../pages/ProgramsGrid/ProgramsGrid.jsx";
 import StoriesStrip from "../pages/StoriesStrip/StoriesStrip.jsx";
 import Contact from "../pages/Contact/Contact.jsx";
-
+import Events from "../pages/Events/Events.jsx";
 export default function Main() {
   return (
     <>
@@ -20,6 +20,7 @@ export default function Main() {
         <div id="news" className="scroll-mt-[72px]"><NewsSection /></div>
         <div id="programs" className="scroll-mt-[72px]"><ProgramsGrid /></div>
         <div id="stories" className="scroll-mt-[72px]"><StoriesStrip /></div>
+        <div id="events" className="scroll-mt-[72px]"><Events/></div>
         <div id="contact" className="scroll-mt-[72px]"><Contact /></div>
       </main>
       <Footer />

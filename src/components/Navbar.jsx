@@ -56,6 +56,7 @@ export default function Navbar() {
       { href: "#programs", label: "Projects" },
       { href: "#stories", label: "Stories" },
       { href: "#news", label: "News" },
+      {href: "#events", label: "Events" },
       { href: "#contact", label: "Contact" },
     ],
     []

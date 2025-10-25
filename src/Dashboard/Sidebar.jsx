@@ -38,6 +38,7 @@ export default function Sidebar() {
     { to: "/dashboard/stories", label: "Stories" },
     { to: "/dashboard/contact-info", label: "Contact Info" },
     { to: "/dashboard/contacts", label: "Contact Messages" },
+    { to: "/dashboard/events", label: "Events" },
   ];
 
   return (

@@ -58,4 +58,17 @@ export const ENDPOINTS = {
   programsManage: "/api/programs/manage/",
   storiesManage: "/api/stories/manage/",
   contactInfoManage: "/api/contact-info/manage/",
+
+  // --- Events (Gallery) ---
+  // Public (read)
+  events: "/api/events/",                         // list; supports ?category=<slug|id>&year=<YYYY>
+  eventCategoriesPublic: "/api/events/categories/",
+
+  // Public detail helper (EXPLICIT) — use ABS(ENDPOINTS.eventDetail(id))
+  eventDetail: (id) => `/api/events/${id}/`,
+
+  // Admin (write)
+  eventCategoriesManage: "/api/events/categories/",
+  eventsManage: "/api/events/items/",
+  eventPhotosManage: "/api/events/photos/",
 };
