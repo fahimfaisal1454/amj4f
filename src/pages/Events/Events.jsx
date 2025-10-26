@@ -79,7 +79,7 @@ function EventCard({ ev }) {
   const cover = ev.photos?.[0]?.image ? ev.photos[0].image : "";
 
   return (
-    <div className="rounded border bg-white overflow-hidden">
+    <div className="rounded border-4 border-lime-500 bg-white overflow-hidden">
       {/* Clickable cover → detail page */}
       <Link to={`/events/${ev.id}`}>
         {cover ? (

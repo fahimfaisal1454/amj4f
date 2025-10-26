@@ -1,9 +1,10 @@
 // src/Dashboard/EventsAdmin.jsx
-import React, { useMemo, useRef, useEffect, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
 import { ENDPOINTS, ABS } from "../api/endpoints";
 
+/* ------------------ auth + helpers ------------------ */
 function getToken() {
   try {
     const key = import.meta.env.VITE_TOKEN_STORAGE_KEY || "aj_tokens";
@@ -17,6 +18,7 @@ function authHeaders({ isForm=false }={}) {
   const t = getToken();
   const h = {};
   if (t) h.Authorization = `Bearer ${t}`;
+  // DO NOT set Content-Type for FormData
   if (!isForm) h["Content-Type"] = "application/json";
   return h;
 }
@@ -28,6 +30,7 @@ async function parseError(res) {
   } catch { return new Error(`${res.status} ${res.statusText}`); }
 }
 
+/* ------------------ Page ------------------ */
 export default function EventsAdmin() {
   const [tab, setTab] = useState("categories");
 
@@ -59,7 +62,6 @@ export default function EventsAdmin() {
 function CategoriesTab() {
   const { data, loading, error, refetch } =
     useApiQuery(ENDPOINTS.eventCategoriesManage, []);
-
   const items = useMemo(()=> Array.isArray(data)? data : data?.results ?? [], [data]);
 
   const [form, setForm] = useState({ name:"", slug:"", order:0, is_active:true });
@@ -88,6 +90,7 @@ function CategoriesTab() {
       setMsg(e.message || "Save failed");
     } finally { setSaving(false); }
   };
+
   const del = async (id) => {
     if (!confirm("Delete category?")) return;
     const res = await fetch(ABS(`${ENDPOINTS.eventCategoriesManage}${id}/`), {
@@ -162,6 +165,7 @@ function EventsTab() {
     } catch (e) { alert(e.message); }
     finally { setSaving(false); }
   };
+
   const del = async (id) => {
     if (!confirm("Delete event?")) return;
     const res = await fetch(ABS(`${ENDPOINTS.eventsManage}${id}/`), { method:"DELETE", headers: authHeaders(), credentials:"include" });
@@ -208,7 +212,7 @@ function EventsTab() {
   );
 }
 
-/* ------------------ Photos ------------------ */
+/* ------------------ Photos (multi-upload + EDIT) ------------------ */
 function PhotosTab() {
   const events = useApiQuery(ENDPOINTS.eventsManage, []);
   const photos = useApiQuery(ENDPOINTS.eventPhotosManage, []);
@@ -218,23 +222,85 @@ function PhotosTab() {
   const fileRef = useRef(null);
   const [saving, setSaving] = useState(false);
 
+  // Local edit state per card
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ event:"", caption:"", order:0, is_active:true });
+  const editFileRef = useRef(null);
+  const [editSaving, setEditSaving] = useState(false);
+
   const submit = async (e) => {
     e.preventDefault();
+    const files = Array.from(fileRef.current?.files || []);
+    if (!files.length) { alert("Pick one or more images"); return; }
+    if (!form.event) { alert("Choose an event"); return; }
     setSaving(true);
     try {
+      await Promise.all(files.map(async (file, idx) => {
+        const body = new FormData();
+        body.append("event", form.event);
+        body.append("caption", form.caption || "");
+        body.append("order", Number(form.order) + idx);
+        body.append("is_active", form.is_active);
+        body.append("image", file);
+
+        const res = await fetch(ABS(ENDPOINTS.eventPhotosManage), {
+          method:"POST", headers: authHeaders({ isForm:true }), body, credentials:"include"
+        });
+        if (!res.ok) throw await parseError(res);
+      }));
+      setForm({ event:"", caption:"", order:0, is_active:true });
+      if (fileRef.current) fileRef.current.value = "";
+      photos.refetch();
+    } catch (e) { alert(e.message); } finally { setSaving(false); }
+  };
+
+  const startEdit = (p) => {
+    setEditingId(p.id);
+    setEditForm({
+      event: p.event,             // assumes serializer returns event id
+      caption: p.caption || "",
+      order: p.order || 0,
+      is_active: !!p.is_active,
+    });
+    if (editFileRef.current) editFileRef.current.value = "";
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm({ event:"", caption:"", order:0, is_active:true });
+    if (editFileRef.current) editFileRef.current.value = "";
+  };
+
+  const saveEdit = async (id) => {
+    setEditSaving(true);
+    try {
       const body = new FormData();
-      Object.entries(form).forEach(([k,v]) => body.append(k, v));
-      if (fileRef.current?.files?.[0]) body.append("image", fileRef.current.files[0]);
-      const res = await fetch(ABS(ENDPOINTS.eventPhotosManage), {
-        method:"POST", headers: authHeaders({ isForm:true }), body, credentials:"include"
+      // Only send the fields that changed is optional; sending all is fine with PATCH
+      body.append("event", editForm.event);
+      body.append("caption", editForm.caption || "");
+      body.append("order", editForm.order);
+      body.append("is_active", editForm.is_active);
+      if (editFileRef.current?.files?.[0]) {
+        body.append("image", editFileRef.current.files[0]); // optional replace
+      }
+
+      const res = await fetch(ABS(`${ENDPOINTS.eventPhotosManage}${id}/`), {
+        method:"PATCH",
+        headers: authHeaders({ isForm:true }),
+        body,
+        credentials:"include",
       });
       if (!res.ok) throw await parseError(res);
-      setForm({ event:"", caption:"", order:0, is_active:true });
-      fileRef.current.value = "";
+
+      cancelEdit();
       photos.refetch();
-    } catch (e) { alert(e.message); }
-    finally { setSaving(false); }
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setEditSaving(false);
+    }
   };
+
   const del = async (id) => {
     if (!confirm("Delete photo?")) return;
     const res = await fetch(ABS(`${ENDPOINTS.eventPhotosManage}${id}/`), { method:"DELETE", headers: authHeaders(), credentials:"include" });
@@ -244,31 +310,79 @@ function PhotosTab() {
 
   return (
     <div className="bg-white border rounded p-4 space-y-4">
+      {/* MULTI UPLOAD */}
       <form onSubmit={submit} className="grid gap-3 md:grid-cols-2">
         <Select label="Event" value={form.event} onChange={v=>setForm({...form, event:v})}
           options={(events.data||[]).map(ev=>({ value:ev.id, label:`${ev.title} (${ev.year||""})` }))} required/>
-        <Input label="Caption" value={form.caption} onChange={v=>setForm({...form, caption:v})}/>
-        <Input label="Order" type="number" value={form.order} onChange={v=>setForm({...form, order:Number(v)})}/>
+        <Input label="Caption (applies to all, optional)" value={form.caption} onChange={v=>setForm({...form, caption:v})}/>
+        <Input label="Starting Order" type="number" value={form.order} onChange={v=>setForm({...form, order:Number(v)})}/>
         <Checkbox label="Active" checked={form.is_active} onChange={v=>setForm({...form, is_active:v})}/>
         <div className="md:col-span-2">
-          <input ref={fileRef} type="file" accept="image/*" className="block w-full text-sm"/>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="block w-full text-sm"/>
         </div>
         <div className="md:col-span-2">
           <button disabled={saving} className="rounded bg-pactPurple text-white px-4 py-2">
-            Upload Photo
+            {saving ? "Uploading…" : "Upload Photos"}
           </button>
         </div>
       </form>
 
+      {/* GRID WITH EDIT/DELETE */}
       <div className="grid gap-3 md:grid-cols-3">
         {items.map(p=>(
           <div key={p.id} className="rounded border overflow-hidden">
             {p.image ? <img src={p.image} className="h-40 w-full object-cover" /> :
               <div className="h-40 w-full bg-gray-100"/>}
+
             <div className="p-3 text-sm">
-              <div className="line-clamp-2">{p.caption || "—"}</div>
-              <div className="text-xs text-gray-500 mt-1">Order: {p.order} · {p.is_active? "Active":"Inactive"}</div>
-              <button className="mt-2 px-3 py-1 rounded bg-red-600 text-white" onClick={()=>del(p.id)}>Delete</button>
+              {editingId === p.id ? (
+                <div className="space-y-2">
+                  <Select
+                    label="Event"
+                    value={editForm.event}
+                    onChange={(v)=>setEditForm({...editForm, event:v})}
+                    options={(events.data||[]).map(ev=>({ value:ev.id, label:`${ev.title} (${ev.year||""})` }))}
+                    required
+                  />
+                  <Input label="Caption" value={editForm.caption} onChange={(v)=>setEditForm({...editForm, caption:v})}/>
+                  <Input label="Order" type="number" value={editForm.order} onChange={(v)=>setEditForm({...editForm, order:Number(v)})}/>
+                  <Checkbox label="Active" checked={editForm.is_active} onChange={(v)=>setEditForm({...editForm, is_active:v})}/>
+                  <label className="block">
+                    <span className="block text-sm font-medium mb-1">Replace image (optional)</span>
+                    <input ref={editFileRef} type="file" accept="image/*" className="block w-full text-sm" />
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-3 py-1 rounded bg-green-600 text-white"
+                      disabled={editSaving}
+                      onClick={()=>saveEdit(p.id)}
+                      type="button"
+                    >
+                      {editSaving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded bg-gray-300"
+                      onClick={cancelEdit}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="line-clamp-2">{p.caption || "—"}</div>
+                  <div className="text-xs text-gray-500 mt-1">Order: {p.order} · {p.is_active? "Active":"Inactive"}</div>
+                  <div className="mt-2 flex gap-2">
+                    <button className="px-3 py-1 rounded bg-indigo-600 text-white" onClick={()=>startEdit(p)}>
+                      Edit
+                    </button>
+                    <button className="px-3 py-1 rounded bg-red-600 text-white" onClick={()=>del(p.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -282,7 +396,7 @@ function Input({ label, value, onChange, type="text", className="", required }) 
   return (
     <label className={`block ${className}`}>
       <span className="block text-sm font-medium mb-1">{label}</span>
-      <input type={type} value={value||""} onChange={e=>onChange(e.target.value)}
+      <input type={type} value={value??""} onChange={e=>onChange(e.target.value)}
         required={required} className="w-full rounded border px-3 py-2"/>
     </label>
   );
@@ -291,7 +405,7 @@ function Textarea({ label, value, onChange, className="" }) {
   return (
     <label className={`block ${className}`}>
       <span className="block text-sm font-medium mb-1">{label}</span>
-      <textarea value={value||""} onChange={e=>onChange(e.target.value)}
+      <textarea value={value??""} onChange={e=>onChange(e.target.value)}
         className="w-full rounded border px-3 py-2 min-h-[100px]"/>
     </label>
   );
@@ -309,7 +423,7 @@ function Select({ label, value, onChange, options, required }) {
   return (
     <label className="block">
       <span className="block text-sm font-medium mb-1">{label}</span>
-      <select value={value||""} onChange={e=>onChange(e.target.value)} required={required}
+      <select value={value??""} onChange={e=>onChange(e.target.value)} required={required}
         className="w-full rounded border px-3 py-2">
         <option value="">Select…</option>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
