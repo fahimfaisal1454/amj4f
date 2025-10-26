@@ -7,6 +7,7 @@ const fileUrl = (p) => (!p ? "" : ABS(p));
 const FALLBACK = "/src/assets/news/placeholder.jpg";
 
 // THEME
+const HEADER = "#74B93D"; // green banner
 const HIGHLIGHT = "#C5FB5A"; // lime accent
 
 export default function ProgramsGrid() {
@@ -48,25 +49,34 @@ export default function ProgramsGrid() {
   return (
     <section
       id="programs"
-      className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pt-12 pb-20 overflow-hidden"
+      className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pb-20 overflow-hidden"
       style={{
-        // backgroundImage: `url(${bgImage})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
     >
-      {/* soft veil + subtle dot texture (matches AboutUs/News) */}
-      <div className="absolute inset-0 bg-white/40" />
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
+      {/* === HEADER BANNER (like “NUMBERS”) === */}
+      <div className="relative">
+        <div
+          className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide py-6 text-center"
+          style={{ background: HEADER }}
+        >
+          OUR PROGRAMS
+        </div>
+        <div
+          className="absolute left-1/2 -translate-x-1/2 w-8 h-8 rotate-45"
+          style={{ background: HEADER, bottom: -16 }}
+        />
+      </div>
+
+      {/* Soft veil + dotted pattern */}
+      <div className="absolute inset-0 bg-white/40 -z-10" />
+      <div className="absolute inset-0 opacity-10 -z-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
 
       {/* Content */}
-      <div className="relative max-w-container mx-auto px-4">
-        <h2 className="text-center text-black font-extrabold uppercase tracking-wide text-3xl sm:text-4xl drop-shadow-sm">
-          Our Programs
-        </h2>
-
-        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="relative max-w-container mx-auto px-4 mt-16">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {programs.map((p, i) => (
             <article
               key={`${p.title}-${i}`}

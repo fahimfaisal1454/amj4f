@@ -7,8 +7,9 @@ const fileUrl = (p) => (!p ? "" : ABS(p));
 const FALLBACK = "/src/assets/news/placeholder.jpg";
 
 // THEME close to blog.brac.net look
-const TAG_COLOR = "#74B93D";   // magenta-ish for categories
-const DIVIDER   = "#74B93D";   // thin orange line below image
+const TAG_COLOR = "#74B93D";   // tag color
+const DIVIDER   = "#74B93D";   // thin line below image
+const BANNER    = "#74B93D";   // section header banner
 
 /* ========================== Helpers ========================== */
 const formatDate = (d) => {
@@ -137,7 +138,7 @@ export default function StoriesStrip() {
   }
 
   /* =============================================================
-     Grid list view (blog.brac.net style)
+     Grid list view
      ============================================================= */
   const [items, setItems] = React.useState([]);
 
@@ -172,18 +173,28 @@ export default function StoriesStrip() {
   return (
     <section
       id="stories"
-      className="relative scroll-mt-[72px] py-2 overflow-hidden"
+      className="relative scroll-mt-[72px] pb-10 overflow-hidden"
     >
-      <div className="absolute inset-0 bg-white/40" />
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
+      {/* === GREEN BANNER HEADER (like your picture) === */}
+      <div className="relative">
+        <div
+          className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide py-6 text-center"
+          style={{ background: BANNER }}
+        >
+          IMPACT STORIES
+        </div>
+        <div
+          className="absolute left-1/2 -translate-x-1/2 w-8 h-8 rotate-45"
+          style={{ background: BANNER, bottom: -16 }}
+        />
+      </div>
 
-      <div className="relative max-w-6xl mx-auto px-4">
-        <h2 className="text-left text-black font-extrabold tracking-tight text-3xl sm:text-4xl">
-          Impact Stories
-        </h2>
+      {/* light texture under the header */}
+      <div className="absolute inset-0 top-[56px] opacity-10 -z-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
 
-        {/* 3-up grid like BRAC blog */}
-        <div className="mt-8 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="relative max-w-6xl mx-auto px-4 pt-8">
+        {/* 3-up grid */}
+        <div className="mt-2 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((s) => (
             <article key={s.id} className="bg-white rounded shadow-sm hover:shadow-md transition">
               {/* image */}
@@ -195,7 +206,6 @@ export default function StoriesStrip() {
                     className="block h-[190px] w-full object-cover"
                     onError={(e) => (e.currentTarget.src = FALLBACK)}
                   />
-                  {/* thin divider below image */}
                   <div className="h-[4px] w-full" style={{ backgroundColor: DIVIDER }} />
                 </div>
               </Link>

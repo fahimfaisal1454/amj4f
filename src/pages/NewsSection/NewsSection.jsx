@@ -5,8 +5,9 @@ import { ABS } from "../../api/endpoints"; // ← use shared absolute-URL helper
 
 const fileUrl = (p) => (!p ? "" : ABS(p));
 
-const TAG_COLOR = "#74B93D";   // magenta (tags)
-const DIVIDER   = "#74B93D";   // thin orange line under image
+const TAG_COLOR = "#74B93D";   // tag & button color (green)
+const DIVIDER   = "#74B93D";   // thin line under image
+const BANNER    = "#74B93D";   // light green header 
 
 /* --------------------------- helpers --------------------------- */
 const toTS = (n) => {
@@ -174,7 +175,6 @@ export default function NewsSection() {
               _order: n.order ?? 0,
             };
           })
-          // newest first; tie-breakers
           .sort((a, b) => {
             if (b._ts !== a._ts) return b._ts - a._ts;
             if (b._order !== a._order) return (b._order ?? 0) - (a._order ?? 0);
@@ -187,26 +187,31 @@ export default function NewsSection() {
   }, []);
 
   return (
-    <section className="relative py-10">
-      <div className="absolute inset-0 bg-white/40 -z-10" />
-      <div className="absolute inset-0 opacity-10 -z-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
-
-      <div className="relative max-w-6xl mx-auto px-4">
-        {/* header like example */}
-        <div className="flex items-center gap-4">
-          <div className="h-[3px] w-16 rounded" style={{ backgroundColor: DIVIDER }} />
-          <h2 className="text-center text-black tracking-wide text-xl sm:text-2xl font-extrabold">
-            LATEST
-          </h2>
-          <div className="h-[3px] flex-1 rounded" style={{ backgroundColor: DIVIDER }} />
+    <section className="relative pb-10">
+      {/* === MAGENTA BANNER WITH NOTCH (like your screenshot) === */}
+      <div className="relative">
+        <div
+          className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide py-6 text-center"
+          style={{ background: BANNER }}
+        >
+          LATEST
         </div>
+        <div
+          className="absolute left-1/2 -translate-x-1/2 w-8 h-8 rotate-45"
+          style={{ background: BANNER, bottom: -16 }}
+        />
+      </div>
 
+      {/* dotted background area under banner */}
+      <div className="absolute inset-0 top-[56px] opacity-10 -z-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
+
+      <div className="relative max-w-6xl mx-auto px-4 pt-8">
         {/* grid 1→2→3 cols */}
         {items.length === 0 ? (
           <p className="mt-10 text-center text-black/70">No news available.</p>
         ) : (
           <>
-            <div className="mt-8 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-2 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
               {items.slice(0, visible).map((n) => {
                 const cover = n.image || n.gallery[0] || "/src/assets/news/placeholder.jpg";
                 return (
