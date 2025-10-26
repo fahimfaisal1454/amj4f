@@ -58,13 +58,10 @@ export default function EventDetail() {
         </span>
       </div>
 
-      {/* Title + Description */}
-      <h1 className="text-3xl font-bold mb-2">
+      {/* Title */}
+      <h1 className="text-3xl font-bold mb-4">
         {data.title} {data.year || ""}
       </h1>
-      {data.description && (
-        <p className="text-gray-700 mb-6 max-w-3xl">{data.description}</p>
-      )}
 
       {/* Cover Image */}
       {cover && (
@@ -75,6 +72,13 @@ export default function EventDetail() {
             className="w-full max-h-[480px] object-cover rounded border mb-8"
           />
         </a>
+      )}
+
+      {/* Description below image - bold, full width, black */}
+      {data.description && (
+        <p className="text-black  mb-10 text-justify">
+          {data.description}
+        </p>
       )}
 
       {/* Photos Grid */}
