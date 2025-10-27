@@ -8,31 +8,44 @@ import {
   Twitter,
   Instagram,
 } from "lucide-react";
-import treeBg from "../assets/tree.jpg"; // ensure this image exists inside src/assets/
+import treeBg from "../assets/tree.jpg"; // make sure this file exists
+
+// ====== ADJUSTABLE FOOTER SETTINGS ======
+const FOOTER_STYLE = {
+  sectionPadding: "py-6",   // ↓ reduce to make footer shorter (was py-12)
+  gridGap: "gap-5",         // ↓ spacing between columns (was gap-8)
+  heading: "text-base",     // ↓ smaller font for headings
+  text: "text-[13px]",      // ↓ smaller text
+  iconSize: "h-4 w-4",      // ↓ smaller icons
+};
 
 export default function Footer() {
   return (
     <footer
       className="relative text-white"
       style={{
-        backgroundColor: "#000", // pure black base
+        backgroundColor: "#000",
         backgroundImage: `url(${treeBg})`,
         backgroundRepeat: "no-repeat",
         backgroundPosition: "left bottom",
         backgroundSize: "contain",
       }}
     >
-      {/* overlay for dark contrast */}
+      {/* dark overlay */}
       <div className="absolute inset-0 bg-black/80" />
 
       {/* Content */}
-      <div className="relative max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Logo & about */}
+      <div
+        className={`relative max-w-6xl mx-auto px-6 ${FOOTER_STYLE.sectionPadding} grid grid-cols-1 md:grid-cols-4 ${FOOTER_STYLE.gridGap}`}
+      >
+        {/* About */}
         <div>
-          <h2 className="text-2xl font-extrabold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
+          <h2
+            className={`font-extrabold mb-2 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent ${FOOTER_STYLE.heading}`}
+          >
             Amar Jashore
           </h2>
-          <p className="text-sm text-gray-300 leading-relaxed">
+          <p className={`${FOOTER_STYLE.text} text-gray-300 leading-relaxed`}>
             A community-driven NGO empowering education, health, and livelihoods
             in Jessore. Together, we make lasting change possible.
           </p>
@@ -40,10 +53,12 @@ export default function Footer() {
 
         {/* Quick links */}
         <div>
-          <h3 className="text-lg font-bold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
+          <h3
+            className={`font-bold mb-2 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent ${FOOTER_STYLE.heading}`}
+          >
             Quick Links
           </h3>
-          <ul className="space-y-2 text-sm font-bold text-gray-300">
+          <ul className={`space-y-1 ${FOOTER_STYLE.text} font-semibold text-gray-300`}>
             {[
               ["/#home", "Home"],
               ["/#about", "About Us"],
@@ -65,37 +80,43 @@ export default function Footer() {
 
         {/* Contact Info */}
         <div>
-          <h3 className="text-lg font-semibold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
+          <h3
+            className={`font-semibold mb-2 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent ${FOOTER_STYLE.heading}`}
+          >
             Contact Us
           </h3>
-          <ul className="space-y-2 text-sm text-gray-300">
+          <ul className={`space-y-1 ${FOOTER_STYLE.text} text-gray-300`}>
             <li className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-lime-400" />
+              <MapPin className={`${FOOTER_STYLE.iconSize} text-lime-400`} />
               Jessore, Bangladesh
             </li>
             <li className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-lime-400" /> +880 1234-567-89
+              <Phone className={`${FOOTER_STYLE.iconSize} text-lime-400`} />{" "}
+              +880 1234-567-89
             </li>
             <li className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-lime-400" /> info@amarjashore.org
+              <Mail className={`${FOOTER_STYLE.iconSize} text-lime-400`} />{" "}
+              info@amarjashore.org
             </li>
           </ul>
         </div>
 
         {/* Socials */}
         <div>
-          <h3 className="text-lg font-semibold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
+          <h3
+            className={`font-semibold mb-2 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent ${FOOTER_STYLE.heading}`}
+          >
             Follow Us
           </h3>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {[Facebook, Twitter, Instagram].map((Icon, i) => (
               <a
                 key={i}
                 href="#"
                 aria-label="social-link"
-                className="p-2 rounded-full bg-black border border-lime-400/40 text-lime-300 hover:bg-lime-400 hover:text-black transition-colors shadow-lg shadow-lime-400/20"
+                className="p-1.5 rounded-full bg-black border border-lime-400/40 text-lime-300 hover:bg-lime-400 hover:text-black transition-colors shadow-md shadow-lime-400/20"
               >
-                <Icon className="h-4 w-4" />
+                <Icon className={`${FOOTER_STYLE.iconSize}`} />
               </a>
             ))}
           </div>
@@ -103,7 +124,7 @@ export default function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="relative border-t border-lime-400/20 text-sm text-center py-4 text-gray-300 bg-black/70 backdrop-blur-sm">
+      <div className="relative border-t border-lime-400/20 text-[12.5px] text-center py-3 text-gray-300 bg-black/70 backdrop-blur-sm">
         © {new Date().getFullYear()}{" "}
         <span className="font-semibold bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
           Amar Jashore NGO

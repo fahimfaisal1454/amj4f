@@ -38,7 +38,7 @@ export default function Home() {
     })();
   }, []);
 
-  // autoplay every 2s (pause when tab hidden)
+  // autoplay every 5s (pause when tab hidden)
   React.useEffect(() => {
     if (!slides.length) return;
     let active = true;
@@ -49,7 +49,7 @@ export default function Home() {
       }
     };
 
-    const id = setInterval(tick, 2000);
+    const id = setInterval(tick, 5000);
     const onVis = () => {}; // we just read document.hidden in tick
     document.addEventListener("visibilitychange", onVis);
 
@@ -77,7 +77,7 @@ export default function Home() {
             }`}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/10" />
+        {/* Removed dark overlay */}
       </div>
 
       {/* Content */}

@@ -1,14 +1,22 @@
 // src/pages/Contact/Contact.jsx
 import React from "react";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
-import { ABS } from "../../api/endpoints"; // ← shared absolute-URL helper
+import { ABS } from "../../api/endpoints";
 
-// THEME
-const LIME = "#C5FB5A";          // accent
-const FORM_GREEN = "#74B93D";    // requested form card color
+// ====== ADJUSTABLE SETTINGS ======
+const LIME = "#C5FB5A";
+const FORM_GREEN = "#74B93D";
+const SETTINGS = {
+  cardPadding: "p-4",              // inner padding of boxes
+  fontBase: "text-[13.5px]",       // global font size
+  heading: "text-xl",              // heading font
+  label: "text-[12.5px]",          // form label size
+  sectionPadding: "py-8",          // overall top-bottom spacing
+  cardRadius: "rounded-lg",        // border radius of cards
+  gridGap: "gap-6",                // gap between left & right columns
+};
 
 export default function Contact() {
-  // ---- contact info (from backend) ----
   const [info, setInfo] = React.useState({
     email: "info@amarjashore.org",
     phone: "+880 1234-567-89",
@@ -16,8 +24,6 @@ export default function Contact() {
     hours: "Mon–Fri, 9 AM – 5 PM",
   });
   const [loadingInfo, setLoadingInfo] = React.useState(true);
-
-  // ---- form state ----
   const [form, setForm] = React.useState({
     name: "",
     email: "",
@@ -29,7 +35,6 @@ export default function Contact() {
   const [sent, setSent] = React.useState(false);
   const [error, setError] = React.useState("");
 
-  // Fetch contact info once
   React.useEffect(() => {
     fetch(ABS(`/api/contact-info/`))
       .then((r) => (r.ok ? r.json() : null))
@@ -64,118 +69,85 @@ export default function Contact() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || "Failed to send message");
-      }
-
+      if (!res.ok) throw new Error("Failed");
       setSent(true);
       setForm({ name: "", email: "", phone: "", subject: "", message: "" });
-    } catch (err) {
+    } catch {
       setError("Could not send your message. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Build left-side info items
   const infoItems = [
     {
-      icon: <Mail className="mt-1 h-5 w-5" style={{ color: "#74b93d" }} />,
+      icon: <Mail className="h-4 w-4 mt-0.5" style={{ color: FORM_GREEN }} />,
       label: "Email",
-      content: (
-        <a
-          href={`mailto:${info.email || "info@amarjashore.org"}`}
-          className="font-medium hover:underline text-black"
-        >
-          {loadingInfo ? "…" : info.email || "info@amarjashore.org"}
+      value: (
+        <a href={`mailto:${info.email}`} className="text-black font-medium hover:underline">
+          {loadingInfo ? "…" : info.email}
         </a>
       ),
     },
     {
-      icon: <Phone className="mt-1 h-5 w-5" style={{ color: "#74b93d" }}/>,
+      icon: <Phone className="h-4 w-4 mt-0.5" style={{ color: FORM_GREEN }} />,
       label: "Phone",
-      content: (
-        <a
-          href={`tel:${info.phone || "+880123456789"}`}
-          className="font-medium hover:underline text-black"
-        >
-          {loadingInfo ? "…" : info.phone || "+880 1234-567-89"}
+      value: (
+        <a href={`tel:${info.phone}`} className="text-black font-medium hover:underline">
+          {loadingInfo ? "…" : info.phone}
         </a>
       ),
     },
     {
-      icon: <MapPin className="mt-1 h-5 w-5" style={{ color: "#74b93d" }} />,
+      icon: <MapPin className="h-4 w-4 mt-0.5" style={{ color: FORM_GREEN }} />,
       label: "Address",
-      content: (
-        <p className="font-medium text-black">
-          {loadingInfo ? "…" : info.address || "Jessore, Bangladesh"}
-        </p>
-      ),
+      value: <p className="text-black font-medium">{info.address}</p>,
     },
     {
-      icon: <Clock className="mt-1 h-5 w-5" style={{ color: "#74b93d" }} />,
+      icon: <Clock className="h-4 w-4 mt-0.5" style={{ color: FORM_GREEN }} />,
       label: "Hours",
-      content: (
-        <p className="font-medium text-black">
-          {loadingInfo ? "…" : info.hours || "Mon–Fri, 9 AM – 5 PM"}
-        </p>
-      ),
+      value: <p className="text-black font-medium">{info.hours}</p>,
     },
   ];
 
   return (
-    <section
-      id="contact"
-      className="scroll-mt-[72px] relative overflow-hidden py-12 bg-white text-gray-900"
-    >
-      {/* Content */}
-      <div className="relative z-10 mx-auto max-w-6xl px-6">
+    <section className={`relative bg-white text-gray-900 ${SETTINGS.sectionPadding}`}>
+      <div className="max-w-6xl mx-auto px-5">
         {/* Header */}
-        <div className="text-center mb-8">
-          <span
-            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold"
-            style={{ borderColor: "#e6e6e6", backgroundColor: "white", color: "black" }}
-          >
-            Get in Touch
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mt-2 text-black">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-black">
             Contact <span className="text-black/70">Amar Jashore</span>
           </h1>
-          <p className="mt-2 max-w-2xl mx-auto text-lg text-black/80">
-            Questions, ideas, or want to volunteer? We’d love to hear from you.
-          </p>
         </div>
 
-        {/* Grid Layout */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-5">
-          {/* Left Column */}
-          <aside className="md:col-span-2 space-y-6">
-            <div className="rounded-xl border border-black/10 bg-white p-6 shadow-[0_10px_26px_rgba(0,0,0,0.12)]">
-              <h2 className="text-xl font-bold text-black">Contact Information</h2>
-              <p className="mt-1 text-black/70">
+        {/* Grid layout */}
+        <div className={`grid md:grid-cols-5 ${SETTINGS.gridGap} items-stretch`}>
+          {/* LEFT SIDE */}
+          <aside className="md:col-span-2 flex flex-col justify-between">
+            {/* Contact Info Card */}
+            <div className={`${SETTINGS.cardRadius} border border-black/10 bg-white ${SETTINGS.cardPadding} shadow-md flex-1`}>
+              <h2 className={`${SETTINGS.heading} font-bold text-black mb-2`}>Contact Information</h2>
+              <p className="text-black/70 text-[13px] mb-3">
                 Reach us via email, phone, or visit our office.
               </p>
-
-              <ul className="mt-6 space-y-4">
-                {infoItems.map((it, idx) => (
-                  <li key={idx} className="flex gap-3">
-                    {it.icon}
+              <ul className="space-y-3">
+                {infoItems.map((item, i) => (
+                  <li key={i} className="flex gap-2 items-start">
+                    {item.icon}
                     <div>
-                      <p className="text-sm text-black/60">{it.label}</p>
-                      {it.content}
+                      <p className="text-[12px] text-black/60">{item.label}</p>
+                      {item.value}
                     </div>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Map */}
-            <div className="overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_10px_26px_rgba(0,0,0,0.12)]">
+            {/* Map Card */}
+            <div className={`${SETTINGS.cardRadius} border border-black/10 bg-white shadow-md mt-4 overflow-hidden`}>
               <iframe
                 title="Amar Jashore Map"
-                className="h-56 w-full"
+                className="w-full h-44"
                 loading="lazy"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
@@ -186,130 +158,124 @@ export default function Contact() {
             </div>
           </aside>
 
-          {/* Right Column (FORM CARD IN GREEN) */}
-          <div className="md:col-span-3">
-            <form onSubmit={submit} className="contact-form-card p-6">
-              <h2 className="text-xl font-bold text-white">Send us a message</h2>
-              <p className="mt-1 text-white/90">We usually reply within 1–2 business days.</p>
+          {/* RIGHT SIDE FORM */}
+          <div className="md:col-span-3 flex flex-col">
+            <form
+              onSubmit={submit}
+              className={`flex flex-col flex-1 justify-between contact-form-card ${SETTINGS.cardPadding}`}
+            >
+              <div>
+                <h2 className={`${SETTINGS.heading} font-bold text-white`}>Send us a message</h2>
+                <p className="text-white/90 text-[13px] mb-3">
+                  We usually reply within 1–2 business days.
+                </p>
 
-              {/* Alerts */}
-              {sent && (
-                <div className="mt-3 rounded-md bg-white/20 border border-white/50 px-3 py-2 text-white text-sm">
-                  ✅ Message sent successfully!
-                </div>
-              )}
-              {error && (
-                <div className="mt-3 rounded-md bg-white/20 border border-white/50 px-3 py-2 text-white text-sm">
-                  {error}
-                </div>
-              )}
+                {sent && (
+                  <div className="bg-white/20 border border-white/40 text-white text-sm px-3 py-2 rounded mb-3">
+                    ✅ Message sent successfully!
+                  </div>
+                )}
+                {error && (
+                  <div className="bg-white/20 border border-white/40 text-white text-sm px-3 py-2 rounded mb-3">
+                    {error}
+                  </div>
+                )}
 
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="name" className="text-sm font-medium text-white">
-                    Full Name
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    value={form.name}
-                    onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
-                    placeholder="Your name"
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="name" className={`${SETTINGS.label} text-white`}>
+                      Full Name
+                    </label>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required
+                      value={form.name}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-md border border-white/40 bg-white text-black text-sm px-3 py-2 focus:ring-2 focus:ring-white/60 outline-none"
+                      placeholder="Your name"
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="email" className="text-sm font-medium text-white">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={form.email}
-                    onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
-                    placeholder="you@example.com"
-                  />
-                </div>
+                  <div>
+                    <label htmlFor="email" className={`${SETTINGS.label} text-white`}>
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      value={form.email}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-md border border-white/40 bg-white text-black text-sm px-3 py-2 focus:ring-2 focus:ring-white/60 outline-none"
+                      placeholder="you@example.com"
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="phone" className="text-sm font-medium text-white">
-                    Phone (optional)
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={form.phone}
-                    onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
-                    placeholder="+880…"
-                  />
-                </div>
+                  <div>
+                    <label htmlFor="phone" className={`${SETTINGS.label} text-white`}>
+                      Phone (optional)
+                    </label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={form.phone}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-md border border-white/40 bg-white text-black text-sm px-3 py-2 focus:ring-2 focus:ring-white/60 outline-none"
+                      placeholder="+880…"
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="subject" className="text-sm font-medium text-white">
-                    Subject
-                  </label>
-                  <input
-                    id="subject"
-                    name="subject"
-                    type="text"
-                    value={form.subject}
-                    onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
-                    placeholder="How can we help?"
-                  />
-                </div>
+                  <div>
+                    <label htmlFor="subject" className={`${SETTINGS.label} text-white`}>
+                      Subject
+                    </label>
+                    <input
+                      id="subject"
+                      name="subject"
+                      type="text"
+                      value={form.subject}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-md border border-white/40 bg-white text-black text-sm px-3 py-2 focus:ring-2 focus:ring-white/60 outline-none"
+                      placeholder="How can we help?"
+                    />
+                  </div>
 
-                <div className="sm:col-span-2">
-                  <label htmlFor="message" className="text-sm font-medium text-white">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    required
-                    rows={5}
-                    value={form.message}
-                    onChange={handleChange}
-                    className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-black outline-none focus:ring-2 focus:ring-white/60 transition-shadow"
-                    placeholder="Write your message here…"
-                  />
+                  <div className="sm:col-span-2">
+                    <label htmlFor="message" className={`${SETTINGS.label} text-white`}>
+                      Message
+                    </label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      rows={4}
+                      required
+                      value={form.message}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-md border border-white/40 bg-white text-black text-sm px-3 py-2 focus:ring-2 focus:ring-white/60 outline-none"
+                      placeholder="Write your message here..."
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-semibold transition shadow-[0_6px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)] hover:-translate-y-0.5 disabled:opacity-70"
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 shadow-md hover:shadow-lg disabled:opacity-70"
                   style={{
                     backgroundColor: submitting ? "#d1d5db" : LIME,
                     color: submitting ? "#111827" : "black",
                   }}
-                  onMouseEnter={(e) => {
-                    if (!submitting) {
-                      e.currentTarget.style.backgroundColor = "black";
-                      e.currentTarget.style.color = LIME;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!submitting) {
-                      e.currentTarget.style.backgroundColor = LIME;
-                      e.currentTarget.style.color = "black";
-                    }
-                  }}
                 >
                   <Send className="h-4 w-4" />
-                  {submitting ? "Sending…" : "Send Message"}
+                  {submitting ? "Sending..." : "Send Message"}
                 </button>
-                <span className="text-sm text-white/90">
+                <span className="text-white/90 text-[12.5px]">
                   We’ll never share your contact details.
                 </span>
               </div>
@@ -318,15 +284,16 @@ export default function Contact() {
         </div>
       </div>
 
-      {/* Styles for the green form card */}
+      {/* green card style */}
       <style>{`
-        .contact-form-card{
+        .contact-form-card {
           background-color: ${FORM_GREEN};
           border: 2px solid ${LIME};
-          border-radius: 0.75rem;
-          box-shadow:
-            0 12px 28px rgba(0,0,0,0.15),
-            inset 0 1px 0 rgba(255,255,255,0.25);
+          border-radius: 0.625rem;
+          box-shadow: 0 10px 22px rgba(0,0,0,0.12);
+          display: flex;
+          flex-direction: column;
+          height: 100%;
         }
       `}</style>
     </section>

@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
 import { ENDPOINTS, ABS } from "../api/endpoints";
+import { compressImage } from "../utils/compressImage.js";
 
 /* ============================== helpers ============================== */
 
@@ -38,6 +39,7 @@ async function parseError(res) {
   }
 }
 const fileUrl = (p) => (!p ? "" : ABS(p));
+const kb = (n) => (n ? Math.round(n / 1024) : 0);
 
 /* ============================== component ============================== */
 export default function AboutAdmin() {
@@ -68,11 +70,19 @@ export default function AboutAdmin() {
     is_active: true,
   });
 
+  // file inputs (refs) – still used to open file-picker
   const fileMain = useRef(null);
   const fileMission = useRef(null);
   const fileVision = useRef(null);
   const fileValues = useRef(null);
 
+  // compressed files we will actually upload
+  const [mainFile, setMainFile] = useState(null);
+  const [missionFile, setMissionFile] = useState(null);
+  const [visionFile, setVisionFile] = useState(null);
+  const [valuesFile, setValuesFile] = useState(null);
+
+  // previews
   const [previewMain, setPreviewMain] = useState("");
   const [previewMission, setPreviewMission] = useState("");
   const [previewVision, setPreviewVision] = useState("");
@@ -110,37 +120,72 @@ export default function AboutAdmin() {
       cta_secondary_href: current.cta_secondary_href || "",
       is_active: Boolean(current.is_active),
     });
+
+    // show existing images as preview
     setPreviewMain(fileUrl(current.image));
     setPreviewMission(fileUrl(current.mission_image));
     setPreviewVision(fileUrl(current.vision_image));
     setPreviewValues(fileUrl(current.values_image));
+
+    // clear staged files on record change
+    setMainFile(null);
+    setMissionFile(null);
+    setVisionFile(null);
+    setValuesFile(null);
   }, [current]);
 
-  // preview on file select (reusable)
-  const usePreview = (ref, setter) => {
-    useEffect(() => {
-      const f = ref.current?.files?.[0];
-      if (!f) return;
-      const url = URL.createObjectURL(f);
-      setter(url);
-      return () => URL.revokeObjectURL(url);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ref.current?.files?.length]);
-  };
-  usePreview(fileMain, setPreviewMain);
-  usePreview(fileMission, setPreviewMission);
-  usePreview(fileVision, setPreviewVision);
-  usePreview(fileValues, setPreviewValues);
-
+  // helpers
   const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const changeBool = (e) => setForm({ ...form, [e.target.name]: e.target.checked });
+  const changeBool = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.checked });
+
+  // pick + compress + preview (shared handler)
+  const handlePick = async (inputRef, setFile, setPreview) => {
+    const f = inputRef.current?.files?.[0];
+    if (!f) {
+      setFile(null);
+      // restore API image preview if any (when user clears input manually)
+      if (current) {
+        if (inputRef === fileMain) setPreview(fileUrl(current.image) || "");
+        if (inputRef === fileMission)
+          setPreview(fileUrl(current.mission_image) || "");
+        if (inputRef === fileVision)
+          setPreview(fileUrl(current.vision_image) || "");
+        if (inputRef === fileValues)
+          setPreview(fileUrl(current.values_image) || "");
+      } else {
+        setPreview("");
+      }
+      return;
+    }
+    try {
+      const compressed = await compressImage(f); // ⬅️ uses utils/compressImage.js
+      setFile(compressed);
+      const obj = URL.createObjectURL(compressed);
+      setPreview(obj);
+    } catch {
+      // if compression fails, fall back to original
+      setFile(f);
+      const obj = URL.createObjectURL(f);
+      setPreview(obj);
+    }
+  };
+
+  // revoke blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      [previewMain, previewMission, previewVision, previewValues].forEach((u) => {
+        if (u && u.startsWith("blob:")) URL.revokeObjectURL(u);
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
     setMsg("");
     try {
       const isEdit = Boolean(current?.id);
-
       const url = isEdit
         ? ABS(`${ENDPOINTS.aboutManage}${current.id}/`)
         : ABS(ENDPOINTS.aboutManage);
@@ -148,12 +193,12 @@ export default function AboutAdmin() {
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, v ?? ""));
 
-      if (fileMain.current?.files?.[0]) body.append("image", fileMain.current.files[0]);
-      if (fileMission.current?.files?.[0]) body.append("mission_image", fileMission.current.files[0]);
-      if (fileVision.current?.files?.[0]) body.append("vision_image", fileVision.current.files[0]);
-      if (fileValues.current?.files?.[0]) body.append("values_image", fileValues.current.files[0]);
+      // only append if user picked a (compressed) file
+      if (mainFile) body.append("image", mainFile);
+      if (missionFile) body.append("mission_image", missionFile);
+      if (visionFile) body.append("vision_image", visionFile);
+      if (valuesFile) body.append("values_image", valuesFile);
 
-      // PATCH for edit → unchanged images are not required again
       const method = isEdit ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -166,6 +211,16 @@ export default function AboutAdmin() {
 
       setMsg("✅ About saved successfully");
       await refetch();
+
+      // clear file inputs after successful save
+      if (fileMain.current) fileMain.current.value = "";
+      if (fileMission.current) fileMission.current.value = "";
+      if (fileVision.current) fileVision.current.value = "";
+      if (fileValues.current) fileValues.current.value = "";
+      setMainFile(null);
+      setMissionFile(null);
+      setVisionFile(null);
+      setValuesFile(null);
     } catch (e) {
       setMsg(e.message || "Save failed");
     } finally {
@@ -211,7 +266,7 @@ export default function AboutAdmin() {
 
       {!loading && !error && (
         <div className="bg-white border rounded-xl p-0 max-w-5xl shadow-sm overflow-hidden">
-          {/* NEW: segmented navigation */}
+          {/* segmented navigation */}
           <SectionNav active={active} onChange={setActive} />
 
           <div className="p-6 space-y-8">
@@ -231,11 +286,22 @@ export default function AboutAdmin() {
                     />
                   </div>
 
-                  {/* Main Image */}
+                  {/* Main Image (compressed) */}
                   <div>
                     <Label strong>Upload Main Image</Label>
-                    <input ref={fileMain} type="file" accept="image/*" className="block w-full text-sm" />
-                    <p className="text-xs text-gray-500 mt-1">PNG/JPG. Recommended width ≥ 1600px.</p>
+                    <input
+                      ref={fileMain}
+                      type="file"
+                      accept="image/*"
+                      className="block w-full text-sm"
+                      onChange={() => handlePick(fileMain, setMainFile, setPreviewMain)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      PNG/JPG. We’ll optimize to WebP (≤1600px, ≤400KB).
+                      {mainFile && (
+                        <span className="ml-2 text-gray-700">New: {kb(mainFile.size)} KB</span>
+                      )}
+                    </p>
                   </div>
                   <PreviewCard title="Main Preview" src={previewMain} />
 
@@ -307,6 +373,8 @@ export default function AboutAdmin() {
                     preview={previewMission}
                     form={form}
                     onChange={change}
+                    onPick={() => handlePick(fileMission, setMissionFile, setPreviewMission)}
+                    stagedFile={missionFile}
                   />
                   <MVVSection
                     title="Vision"
@@ -316,6 +384,8 @@ export default function AboutAdmin() {
                     preview={previewVision}
                     form={form}
                     onChange={change}
+                    onPick={() => handlePick(fileVision, setVisionFile, setPreviewVision)}
+                    stagedFile={visionFile}
                   />
                   <MVVSection
                     title="Values"
@@ -325,13 +395,15 @@ export default function AboutAdmin() {
                     preview={previewValues}
                     form={form}
                     onChange={change}
+                    onPick={() => handlePick(fileValues, setValuesFile, setPreviewValues)}
+                    stagedFile={valuesFile}
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* NEW: sticky footer actions on mobile */}
+          {/* sticky footer actions on mobile */}
           <div className="border-t bg-gray-50/60 p-4 flex items-center justify-between gap-3 sticky bottom-0">
             <label className="flex items-center gap-2 text-sm font-medium">
               <input
@@ -449,7 +521,7 @@ function PreviewCard({ title, src }) {
   );
 }
 
-function MVVSection({ title, titleName, descName, fileRef, preview, form, onChange }) {
+function MVVSection({ title, titleName, descName, fileRef, preview, form, onChange, onPick, stagedFile }) {
   return (
     <div className="rounded-xl border p-4">
       <h3 className="font-semibold text-base mb-3">{title}</h3>
@@ -466,8 +538,17 @@ function MVVSection({ title, titleName, descName, fileRef, preview, form, onChan
         </div>
         <div>
           <Label strong>Upload {title} Image</Label>
-          <input ref={fileRef} type="file" accept="image/*" className="block w-full text-sm" />
-          <p className="text-xs text-gray-500 mt-1">PNG/JPG. Optional.</p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="block w-full text-sm"
+            onChange={onPick}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            PNG/JPG. We’ll optimize to WebP (≤1600px, ≤400KB).
+            {stagedFile && <span className="ml-2 text-gray-700">New: {kb(stagedFile.size)} KB</span>}
+          </p>
         </div>
         <PreviewCard title={`${title} Preview`} src={preview} />
       </div>
