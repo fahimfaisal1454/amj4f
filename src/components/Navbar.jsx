@@ -56,22 +56,15 @@ export default function Navbar() {
       { href: "#programs", label: "Projects" },
       { href: "#stories", label: "Stories" },
       { href: "#news", label: "News" },
-      {href: "#events", label: "Events" },
+      { href: "#events", label: "Events" },
       { href: "#contact", label: "Contact" },
     ],
     []
   );
 
-  // --- smooth scroll (works with fixed header + respects reduced motion)
-  const handleNavClick = (e, href) => {
-    if (!href?.startsWith("#")) return; // external link, ignore
-    e.preventDefault();
-
-    // If we're not on the homepage layout, just go there with the hash
-    if (location.pathname !== "/") {
-      window.location.assign("/" + href);
-      return;
-    }
+  // --- helper: scroll to a hash with header offset and (optionally) update URL
+  function scrollToHash(href, { writeHash = false } = {}) {
+    if (!href?.startsWith("#")) return;
 
     const target = document.querySelector(href);
     if (!target) return;
@@ -83,8 +76,46 @@ export default function Navbar() {
     const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: y, behavior: prefersReduce ? "auto" : "smooth" });
 
+    if (writeHash) {
+      // write the hash so Back returns to the section (/#events)
+      try {
+        history.replaceState(history.state, "", href);
+      } catch {}
+    }
+  }
+
+  // --- smooth scroll (works with fixed header + respects reduced motion)
+  const handleNavClick = (e, href) => {
+    if (!href?.startsWith("#")) return; // external link, ignore
+    e.preventDefault();
+
+    // If we're not on the homepage layout, just go there with the hash
+    if (location.pathname !== "/") {
+      window.location.assign("/" + href); // ensures URL has the hash
+      return;
+    }
+
+    // On homepage: smooth scroll & write the hash into the URL
+    scrollToHash(href, { writeHash: true });
     setMobileOpen(false);
   };
+
+  // Normalize hash-based navigation (initial load and on Back/Forward)
+  useEffect(() => {
+    const onHashChange = () => {
+      if (location.pathname === "/" && location.hash) {
+        // Scroll with header offset when hash changes (e.g., Back to #events)
+        // Use rAF so layout is ready.
+        requestAnimationFrame(() => scrollToHash(location.hash, { writeHash: false }));
+      }
+    };
+
+    // Run once on mount (deep-link like /#events)
+    onHashChange();
+    // Then listen for hash changes
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-black shadow-lg">

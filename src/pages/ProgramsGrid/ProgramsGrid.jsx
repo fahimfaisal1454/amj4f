@@ -1,14 +1,16 @@
 // src/pages/ProgramsGrid/ProgramsGrid.jsx
 import React from "react";
-import bgImage from "../../assets/backgrounds/green_bg.jpg";
 import { ABS } from "../../api/endpoints"; // ← use shared absolute-URL helper
 
 const fileUrl = (p) => (!p ? "" : ABS(p));
-const FALLBACK = "/src/assets/news/placeholder.jpg";
+// ✅ robust fallback path that works in dev & build
+const FALLBACK = new URL("../../assets/news/placeholder.jpg", import.meta.url).href;
 
 // THEME
 const HEADER = "#74B93D"; // green banner
 const HIGHLIGHT = "#C5FB5A"; // lime accent
+
+const MODAL_STATE_KEY = "programs:modal"; // marker we push into history.state
 
 export default function ProgramsGrid() {
   const [programs, setPrograms] = React.useState([]);
@@ -40,11 +42,49 @@ export default function ProgramsGrid() {
       });
   }, []);
 
+  // Close modal on ESC, but integrate with history so Back works consistently
   React.useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && setActive(null);
+    const onKey = (e) => {
+      if (e.key === "Escape" && active) {
+        safeCloseModal();
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [active]);
+
+  // When opening the modal, push a history state; Back will close it.
+  const openModal = (p) => {
+    try {
+      // Only push a marker if it isn't already the current state
+      if (!(history.state && history.state[MODAL_STATE_KEY])) {
+        history.pushState({ ...(history.state || {}), [MODAL_STATE_KEY]: true }, "");
+      }
+    } catch {}
+    setActive(p);
+  };
+
+  // Close modal and pop the marker state if present
+  const safeCloseModal = () => {
+    setActive(null);
+    try {
+      if (history.state && history.state[MODAL_STATE_KEY]) {
+        history.back(); // pop just the marker we pushed
+      }
+    } catch {}
+  };
+
+  // Listen for Back/Forward: if our marker is popped, close the modal.
+  React.useEffect(() => {
+    const onPop = () => {
+      // If user pressed Back and modal was open, close it instead of navigating away
+      if (active) {
+        setActive(null);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [active]);
 
   return (
     <section
@@ -80,14 +120,16 @@ export default function ProgramsGrid() {
           {programs.map((p, i) => (
             <article
               key={`${p.title}-${i}`}
-              onClick={() => setActive(p)}
+              onClick={() => openModal(p)}
               className="flex cursor-pointer flex-col overflow-hidden rounded-xl pg-card hover:-translate-y-1 transition-all"
             >
               <img
-                src={p.image}
+                src={p.image || FALLBACK}
                 alt={p.title}
                 className="h-48 w-full object-cover"
                 onError={(e) => (e.currentTarget.src = FALLBACK)}
+                loading="lazy"
+                decoding="async"
               />
               <div className="flex-1 px-5 pt-4 pb-6 border-t border-[#C5FB5A]">
                 <span
@@ -116,7 +158,7 @@ export default function ProgramsGrid() {
       {active && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setActive(null)}
+          onClick={safeCloseModal}
           role="dialog"
           aria-modal="true"
         >
@@ -127,10 +169,11 @@ export default function ProgramsGrid() {
             {/* Header image */}
             <div className="relative h-56 w-full">
               <img
-                src={active.image}
+                src={active.image || FALLBACK}
                 alt={active.title}
                 className="absolute inset-0 h-full w-full object-cover"
                 onError={(e) => (e.currentTarget.src = FALLBACK)}
+                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
               <div className="absolute bottom-4 left-4 right-4">
@@ -145,7 +188,7 @@ export default function ProgramsGrid() {
               </div>
               <button
                 className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-[#333] hover:bg-white"
-                onClick={() => setActive(null)}
+                onClick={safeCloseModal}
                 aria-label="Close"
               >
                 ✕
@@ -160,7 +203,7 @@ export default function ProgramsGrid() {
 
               <div className="mt-5 flex items-center justify-between">
                 <span className="text-xs text-[#777]">
-                  Press <kbd className="rounded bg-[#eee] px-1 py-[2px]">Esc</kbd> to close
+                  Press <kbd className="rounded bg-[#eee] px-1 py-[2px]">Esc</kbd> or hit Back to close
                 </span>
                 <button
                   className="rounded-full px-4 py-2 text-sm font-semibold transition shadow-[0_6px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)]"
@@ -173,7 +216,7 @@ export default function ProgramsGrid() {
                     e.currentTarget.style.backgroundColor = HIGHLIGHT;
                     e.currentTarget.style.color = "black";
                   }}
-                  onClick={() => setActive(null)}
+                  onClick={safeCloseModal}
                 >
                   Close
                 </button>

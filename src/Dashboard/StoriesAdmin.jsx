@@ -3,6 +3,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
 import { ENDPOINTS, ABS } from "../api/endpoints";
+import { compressImage } from "../utils/compressImage.js"; // ✅ use your util
 
 /* ---------- Helpers ---------- */
 
@@ -22,7 +23,6 @@ const authHeaders = ({ isForm = false } = {}) => {
   const t = getAccessToken();
   const h = {};
   if (t) h.Authorization = `Bearer ${t}`;
-  // IMPORTANT: do NOT set Content-Type for FormData (browser sets boundary)
   if (!isForm) h["Content-Type"] = "application/json";
   return h;
 };
@@ -42,21 +42,18 @@ const parseError = async (res) => {
 
 const fileUrl = (p) => (!p ? "" : ABS(p));
 
-/** Fetch an existing image URL and return a Blob you can append to FormData. */
 async function fetchExistingImageBlob(imagePathOrUrl) {
   if (!imagePathOrUrl) return null;
   const url = ABS(imagePathOrUrl);
   const resp = await fetch(url, { credentials: "include" });
   if (!resp.ok) return null;
   const blob = await resp.blob();
-  // try to derive a filename from the URL
   const nameFromUrl =
     url.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() ||
     "image.jpg";
   return new File([blob], nameFromUrl, { type: blob.type || "image/jpeg" });
 }
 
-/** CSS-in-JS helper: clamp text to N lines without Tailwind plugin */
 const clamp = (lines) => ({
   display: "-webkit-box",
   WebkitLineClamp: lines,
@@ -117,35 +114,44 @@ export default function StoriesAdmin() {
     try {
       const isEdit = Boolean(editing?.id);
 
-      // Correct URLs (DRF expects trailing slash)
       const url = isEdit
         ? ABS(`${ENDPOINTS.storiesManage}${editing.id}/`)
         : ABS(ENDPOINTS.storiesManage);
 
-      // For CREATE, image is required
       if (!isEdit && !payload.image) {
         setSubmitError("Please select an image.");
         setSaving(false);
         return;
       }
 
-      // Build multipart body
-      const body = new FormData();
-      Object.entries(payload).forEach(([k, v]) => {
-        if (v !== undefined && v !== null && v !== "") body.append(k, v);
-      });
-
-      // If PUT (full update) and no new image chosen, attach the existing image
-      if (isEdit && !payload.image && editing?.image) {
-        const existingFile = await fetchExistingImageBlob(editing.image);
-        if (existingFile) body.append("image", existingFile);
+      // Prepare image (compress if new file provided)
+      let imageFile = payload.image || null;
+      if (imageFile) {
+        const original = imageFile;
+        imageFile = await compressImage(original);
+        console.log(
+          "[Stories] original:",
+          (original.size / 1024 / 1024).toFixed(2),
+          "MB → compressed:",
+          (imageFile.size / 1024).toFixed(0),
+          "KB",
+          imageFile.name
+        );
+      } else if (isEdit && editing?.image) {
+        // Reuse existing server image if no new one chosen
+        const existing = await fetchExistingImageBlob(editing.image);
+        if (existing) imageFile = existing;
       }
 
-      // Use PUT for edits, POST for creates
-      const method = isEdit ? "PUT" : "POST";
+      const { image, ...rest } = payload;
+      const body = new FormData();
+      Object.entries(rest).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") body.append(k, v);
+      });
+      if (imageFile) body.append("image", imageFile);
 
       const res = await fetch(url, {
-        method,
+        method: isEdit ? "PUT" : "POST",
         headers: authHeaders({ isForm: true }),
         body,
         credentials: "include",

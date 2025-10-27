@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
 import { ENDPOINTS, ABS } from "../api/endpoints";
+import { compressImage } from "../utils/compressImage.js";
 
 /* ============================== helpers ============================== */
 
@@ -172,25 +173,23 @@ export default function BannersAdmin() {
       {loading && <div>Loading…</div>}
       {error && <div className="text-red-600">{String(error)}</div>}
 
-      {!loading && !error && (
-        items.length === 0 ? (
-          <div className="rounded border bg-white p-6 text-gray-600">
-            No banners yet. Click{" "}
-            <span className="font-semibold">“New Banner”</span> to create one.
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((b) => (
-              <BannerCard
-                key={b.id}
-                banner={b}
-                onEdit={() => openEdit(b)}
-                onDelete={() => handleDelete(b.id)}
-              />
-            ))}
-          </div>
-        )
-      )}
+      {!loading && !error && (items.length === 0 ? (
+        <div className="rounded border bg-white p-6 text-gray-600">
+          No banners yet. Click{" "}
+          <span className="font-semibold">“New Banner”</span> to create one.
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((b) => (
+            <BannerCard
+              key={b.id}
+              banner={b}
+              onEdit={() => openEdit(b)}
+              onDelete={() => handleDelete(b.id)}
+            />
+          ))}
+        </div>
+      ))}
 
       {showModal && (
         <BannerModal
@@ -212,7 +211,13 @@ function BannerCard({ banner, onEdit, onDelete }) {
   return (
     <div className="rounded border bg-white shadow-sm overflow-hidden">
       {img ? (
-        <img src={img} alt={banner.title || ""} className="h-40 w-full object-cover" />
+        <img
+          src={img}
+          alt={banner.title || ""}
+          className="h-40 w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <div className="h-40 w-full bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
           No image
@@ -266,17 +271,38 @@ function BannerModal({ initial, onClose, onSubmit, saving, error }) {
   const [ctaHref, setCtaHref] = useState(initial?.cta_href || "");
   const [isActive, setIsActive] = useState(Boolean(initial?.is_active));
   const [previewUrl, setPreviewUrl] = useState(fileUrl(initial?.image) || "");
+
+  // we store the (compressed) selected file here
+  const [selectedFile, setSelectedFile] = useState(null);
   const fileRef = useRef(null);
 
-  // Preview selected file
+  // When a file is chosen → compress → preview
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setSelectedFile(null);
+      setPreviewUrl(fileUrl(initial?.image) || "");
+      return;
+    }
+    try {
+      const compressed = await compressImage(file); // ✅ use shared util
+      setSelectedFile(compressed);
+      const objUrl = URL.createObjectURL(compressed);
+      setPreviewUrl(objUrl);
+    } catch {
+      // fallback: use original file
+      setSelectedFile(file);
+      const objUrl = URL.createObjectURL(file);
+      setPreviewUrl(objUrl);
+    }
+  };
+
+  // Revoke preview URL on unmount / when file changes to avoid leaks
   useEffect(() => {
-    const file = fileRef.current?.files?.[0];
-    if (!file) return;
-    const objUrl = URL.createObjectURL(file);
-    setPreviewUrl(objUrl);
-    return () => URL.revokeObjectURL(objUrl);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileRef.current?.files?.length]);
+    return () => {
+      if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -286,8 +312,9 @@ function BannerModal({ initial, onClose, onSubmit, saving, error }) {
       cta_label: ctaLabel,
       cta_href: ctaHref,
       is_active: isActive,
+      // if a new file was picked, it is already compressed
+      image: selectedFile || undefined,
     };
-    if (fileRef.current?.files?.[0]) payload.image = fileRef.current.files[0];
     onSubmit(payload);
   };
 
@@ -370,15 +397,27 @@ function BannerModal({ initial, onClose, onSubmit, saving, error }) {
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium mb-1">Upload Image</label>
-                <input ref={fileRef} type="file" accept="image/*" className="block w-full text-sm" />
-                <p className="text-xs text-gray-500 mt-1">PNG/JPG. Recommended width ≥ 1600px.</p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm"
+                  onChange={handleFileChange}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  JPG/PNG/WebP. We&apos;ll optimize to WebP, max width 1600px (~400KB).
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">Preview</label>
                 <div className="h-32 rounded border bg-gray-50 flex items-center justify-center overflow-hidden">
                   {previewUrl ? (
-                    <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={previewUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <span className="text-gray-400 text-sm">No image selected</span>
                   )}

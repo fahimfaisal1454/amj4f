@@ -1,12 +1,14 @@
 // src/Pages/StoriesStrip/StoriesStrip.jsx
 import React from "react";
-import { Link, useParams, useLocation } from "react-router-dom";
-import { ABS } from "../../api/endpoints"; // ← use shared absolute-URL helper
+import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
+import { ABS } from "../../api/endpoints"; // ← shared absolute-URL helper
+
+// ✅ Robust fallback URL (works with Vite/builds)
+const FALLBACK_IMG = new URL("../../assets/news/placeholder.jpg", import.meta.url).href;
 
 const fileUrl = (p) => (!p ? "" : ABS(p));
-const FALLBACK = "/src/assets/news/placeholder.jpg";
 
-// THEME close to blog.brac.net look
+// THEME (close to blog.brac.net look)
 const TAG_COLOR = "#74B93D";   // tag color
 const DIVIDER   = "#74B93D";   // thin line below image
 const BANNER    = "#74B93D";   // section header banner
@@ -16,11 +18,7 @@ const formatDate = (d) => {
   if (!d) return "";
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return dt.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
 };
 const stripHtml = (html) => {
   if (!html) return "";
@@ -33,22 +31,48 @@ const excerpt = (html, len = 140) => {
   return t.length <= len ? t : t.slice(0, len).replace(/\s+\S*$/, "") + "…";
 };
 
+/* --------- scroll memory (return to exact spot after Back) ---------- */
+const STORIES_SCROLL_KEY = "stories:list:scrollY";
+
+function saveStoriesScroll() {
+  try {
+    sessionStorage.setItem(STORIES_SCROLL_KEY, String(window.scrollY || 0));
+  } catch {}
+}
+
+// Restore EXACT saved scrollY (no header offset). Wait for images to decode.
+async function restoreStoriesScrollAfterImages() {
+  try {
+    const raw = sessionStorage.getItem(STORIES_SCROLL_KEY);
+    if (!raw) return;
+
+    const imgs = Array.from(document.querySelectorAll("#stories img"));
+    await Promise.all(
+      imgs.map((img) =>
+        "decode" in img ? img.decode().catch(() => {}) : Promise.resolve()
+      )
+    );
+
+    sessionStorage.removeItem(STORIES_SCROLL_KEY);
+    const y = parseInt(raw, 10) || 0;
+
+    const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: Math.max(0, y), behavior: prefersReduce ? "auto" : "smooth" });
+  } catch {}
+}
+
 /* =============================================================
    Detail view (same component, routed to /stories/:id)
    ============================================================= */
 export default function StoriesStrip() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const passed = location.state?.story;
 
   if (id) {
     const [story, setStory] = React.useState(
-      passed
-        ? {
-            ...passed,
-            image: fileUrl(passed.image),
-          }
-        : null
+      passed ? { ...passed, image: fileUrl(passed.image) } : null
     );
     const [loading, setLoading] = React.useState(!passed);
 
@@ -80,6 +104,14 @@ export default function StoriesStrip() {
       return () => (cancel = true);
     }, [id, passed]);
 
+    const handleBack = () => {
+      if (location.state?.story || location.state?.fromList) {
+        navigate(-1);
+      } else {
+        navigate("/stories");
+      }
+    };
+
     if (loading || !story) {
       return <section className="py-14 text-center text-sm text-gray-600">Loading…</section>;
     }
@@ -90,6 +122,15 @@ export default function StoriesStrip() {
         <div className="absolute inset-0 opacity-10 -z-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
 
         <div className="relative max-w-4xl mx-auto px-4">
+          {/* Back control */}
+          <button
+            onClick={handleBack}
+            className="text-sm font-semibold hover:underline mb-4"
+            style={{ color: TAG_COLOR }}
+          >
+            ← Back to Stories
+          </button>
+
           {/* hero image */}
           {story.image && (
             <div className="relative mb-5 overflow-hidden rounded">
@@ -97,7 +138,8 @@ export default function StoriesStrip() {
                 src={story.image}
                 alt={story.title}
                 className="w-full max-h-[420px] object-cover"
-                onError={(e) => (e.currentTarget.src = FALLBACK)}
+                onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
+                decoding="async"
               />
             </div>
           )}
@@ -122,16 +164,6 @@ export default function StoriesStrip() {
           <article className="mt-5 prose max-w-none leading-7 text-justify prose-p:my-4 prose-a:underline">
             <div dangerouslySetInnerHTML={{ __html: story.body || story.desc }} />
           </article>
-
-          <div className="mt-8">
-            <Link
-              to="/"
-              className="text-sm font-semibold hover:underline"
-              style={{ color: TAG_COLOR }}
-            >
-              ← Back to Stories
-            </Link>
-          </div>
         </div>
       </section>
     );
@@ -150,10 +182,9 @@ export default function StoriesStrip() {
           .filter((x) => x.is_active !== false)
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           .map((s) => {
-            const tags =
-              Array.isArray(s.tags)
-                ? s.tags
-                : (s.tag || "").split(",").map((x) => x.trim()).filter(Boolean);
+            const tags = Array.isArray(s.tags)
+              ? s.tags
+              : (s.tag || "").split(",").map((x) => x.trim()).filter(Boolean);
 
             return {
               id: s.id ?? s.slug ?? `${s.title}-${s.order ?? ""}`,
@@ -170,11 +201,18 @@ export default function StoriesStrip() {
       .catch(() => setItems([]));
   }, []);
 
+  // After items show up, restore EXACT scroll (no header offset) after images decode
+  React.useEffect(() => {
+    if (items.length === 0) return;
+    restoreStoriesScrollAfterImages();
+  }, [items.length]);
+
+  const saveListState = React.useCallback(() => {
+    saveStoriesScroll();
+  }, []);
+
   return (
-    <section
-      id="stories"
-      className="relative scroll-mt-[72px] pb-10 overflow-hidden"
-    >
+    <section id="stories" className="relative scroll-mt-[72px] pb-10 overflow-hidden">
       {/* === GREEN BANNER HEADER (like your picture) === */}
       <div className="relative">
         <div
@@ -198,13 +236,19 @@ export default function StoriesStrip() {
           {items.map((s) => (
             <article key={s.id} className="bg-white rounded shadow-sm hover:shadow-md transition">
               {/* image */}
-              <Link to={`/stories/${encodeURIComponent(s.id)}`} state={{ story: s }}>
+              <Link
+                to={`/stories/${encodeURIComponent(s.id)}`}
+                state={{ story: s, fromList: true }}
+                onClick={saveListState}
+              >
                 <div className="relative overflow-hidden">
                   <img
-                    src={s.image || FALLBACK}
+                    src={s.image || FALLBACK_IMG}
                     alt={s.title}
                     className="block h-[190px] w-full object-cover"
-                    onError={(e) => (e.currentTarget.src = FALLBACK)}
+                    onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="h-[4px] w-full" style={{ backgroundColor: DIVIDER }} />
                 </div>
@@ -222,7 +266,8 @@ export default function StoriesStrip() {
               <div className="px-1 pb-4">
                 <Link
                   to={`/stories/${encodeURIComponent(s.id)}`}
-                  state={{ story: s }}
+                  state={{ story: s, fromList: true }}
+                  onClick={saveListState}
                   className="mt-1 block text-[1.35rem] leading-snug font-semibold text-[#1b1b1b]"
                 >
                   {s.title}

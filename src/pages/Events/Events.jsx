@@ -6,6 +6,39 @@ import { useApiQuery } from "../../api/hooks";
 
 const GREEN = "#74B93D"; // your color
 
+/* --------- scroll memory (return to exact spot after Back) ---------- */
+const EVENTS_SCROLL_KEY = "events:list:scrollY";
+const RETURN_KEY = "events:returnTo";
+
+function saveEventsScroll() {
+  try {
+    sessionStorage.setItem(EVENTS_SCROLL_KEY, String(window.scrollY || 0));
+    sessionStorage.setItem(RETURN_KEY, "/events");
+  } catch {}
+}
+
+// Restore EXACT saved scrollY after images decode
+async function restoreEventsScrollAfterImages() {
+  try {
+    const raw = sessionStorage.getItem(EVENTS_SCROLL_KEY);
+    if (!raw) return;
+
+    // wait for images inside the list to decode so heights are correct
+    const imgs = Array.from(document.querySelectorAll("#events-list img"));
+    await Promise.all(
+      imgs.map((img) =>
+        "decode" in img ? img.decode().catch(() => {}) : Promise.resolve()
+      )
+    );
+
+    sessionStorage.removeItem(EVENTS_SCROLL_KEY);
+    const y = parseInt(raw, 10) || 0;
+
+    const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: Math.max(0, y), behavior: prefersReduce ? "auto" : "smooth" });
+  } catch {}
+}
+
 export default function Events() {
   const cats = useApiQuery(ENDPOINTS.eventCategoriesPublic, []);
   const [filters, setFilters] = React.useState({ cat: "", year: "" });
@@ -27,6 +60,17 @@ export default function Events() {
     () => (cats.data || []).map((c) => ({ id: c.id, slug: c.slug, name: c.name })),
     [cats.data]
   );
+
+  // While we're on /events, remember this as the return target
+  React.useEffect(() => {
+    try { sessionStorage.setItem(RETURN_KEY, "/events"); } catch {}
+  }, []);
+
+  // After list renders, restore scroll (if any)
+  React.useEffect(() => {
+    if (!events.data || events.data.length === 0) return;
+    restoreEventsScrollAfterImages();
+  }, [events.data]);
 
   return (
     <section className="relative pb-10">
@@ -86,7 +130,7 @@ export default function Events() {
             })}
           </div>
 
-          {/* Year dropdown
+          {/* Year dropdown (optional)
           <select
             value={filters.year}
             onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))}
@@ -109,7 +153,7 @@ export default function Events() {
           (events.data || []).length === 0 ? (
             <div className="text-gray-600">No events found.</div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div id="events-list" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {(events.data || []).map((ev) => (
                 <EventCard key={ev.id} ev={ev} />
               ))}
@@ -124,11 +168,27 @@ export default function Events() {
 function EventCard({ ev }) {
   const cover = ev.photos?.[0]?.image ? ev.photos[0].image : "";
 
+  const onGoDetail = () => {
+    // save scroll before navigation (works with link below)
+    saveEventsScroll();
+  };
+
   return (
     <div className="rounded border-4 border-lime-500 bg-white overflow-hidden">
-      <Link to={`/events/${ev.id}`}>
+      {/* Pass state + save scroll so detail back brings us to the list & same spot */}
+      <Link
+        to={`/events/${ev.id}`}
+        state={{ fromList: true, returnTo: "/events" }}
+        onClick={onGoDetail}
+      >
         {cover ? (
-          <img src={cover} alt={ev.title} className="h-48 w-full object-cover" />
+          <img
+            src={cover}
+            alt={ev.title}
+            className="h-48 w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="h-48 w-full bg-gray-100 grid place-items-center text-gray-400">
             No image
@@ -138,7 +198,12 @@ function EventCard({ ev }) {
 
       <div className="p-4">
         <div className="font-semibold">
-          <Link to={`/events/${ev.id}`} className="hover:underline">
+          <Link
+            to={`/events/${ev.id}`}
+            state={{ fromList: true, returnTo: "/events" }}
+            onClick={onGoDetail}
+            className="hover:underline"
+          >
             {ev.title} {ev.year || ""}
           </Link>
         </div>
@@ -149,11 +214,18 @@ function EventCard({ ev }) {
         {ev.photos?.length > 0 && (
           <div className="mt-3 grid grid-cols-5 gap-2">
             {ev.photos.slice(0, 10).map((p) => (
-              <Link key={p.id} to={`/events/${ev.id}`}>
+              <Link
+                key={p.id}
+                to={`/events/${ev.id}`}
+                state={{ fromList: true, returnTo: "/events" }}
+                onClick={onGoDetail}
+              >
                 <img
                   src={p.image}
                   alt={p.caption || ""}
                   className="h-16 w-full object-cover rounded"
+                  loading="lazy"
+                  decoding="async"
                 />
               </Link>
             ))}

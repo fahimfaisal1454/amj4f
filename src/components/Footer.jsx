@@ -8,7 +8,7 @@ import {
   Twitter,
   Instagram,
 } from "lucide-react";
-import treeBg from "../assets/tree.jpg"; // <-- make sure you place your tree.jpg inside src/assets/
+import treeBg from "../assets/tree.jpg"; // ensure this image exists inside src/assets/
 
 export default function Footer() {
   return (
@@ -29,9 +29,7 @@ export default function Footer() {
       <div className="relative max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Logo & about */}
         <div>
-          <h2
-            className="text-2xl font-extrabold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent"
-          >
+          <h2 className="text-2xl font-extrabold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
             Amar Jashore
           </h2>
           <p className="text-sm text-gray-300 leading-relaxed">
@@ -42,18 +40,16 @@ export default function Footer() {
 
         {/* Quick links */}
         <div>
-          <h3
-            className="text-lg font-bold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent"
-          >
+          <h3 className="text-lg font-bold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
             Quick Links
           </h3>
           <ul className="space-y-2 text-sm font-bold text-gray-300">
             {[
-              ["#home", "Home"],
-              ["#about", "About Us"],
-              ["#programs", "Programs"],
-              ["#stories", "Stories"],
-              ["#contact", "Contact"],
+              ["/#home", "Home"],
+              ["/#about", "About Us"],
+              ["/#programs", "Programs"],
+              ["/#stories", "Stories"],
+              ["/#contact", "Contact"],
             ].map(([href, label]) => (
               <li key={href}>
                 <a
@@ -69,9 +65,7 @@ export default function Footer() {
 
         {/* Contact Info */}
         <div>
-          <h3
-            className="text-lg font-semibold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent"
-          >
+          <h3 className="text-lg font-semibold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
             Contact Us
           </h3>
           <ul className="space-y-2 text-sm text-gray-300">
@@ -90,9 +84,7 @@ export default function Footer() {
 
         {/* Socials */}
         <div>
-          <h3
-            className="text-lg font-semibold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent"
-          >
+          <h3 className="text-lg font-semibold mb-3 bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
             Follow Us
           </h3>
           <div className="flex gap-4">
@@ -100,6 +92,7 @@ export default function Footer() {
               <a
                 key={i}
                 href="#"
+                aria-label="social-link"
                 className="p-2 rounded-full bg-black border border-lime-400/40 text-lime-300 hover:bg-lime-400 hover:text-black transition-colors shadow-lg shadow-lime-400/20"
               >
                 <Icon className="h-4 w-4" />

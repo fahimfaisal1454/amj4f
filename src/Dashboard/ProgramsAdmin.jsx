@@ -3,6 +3,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
 import { ENDPOINTS, ABS } from "../api/endpoints";
+import { compressImage } from "../utils/compressImage.js"; // 👈 add this
 
 /* ============================== helpers ============================== */
 
@@ -113,19 +114,37 @@ export default function ProgramsAdmin() {
         : ABS(ENDPOINTS.programsManage);
 
       const body = new FormData();
-      Object.entries(payload).forEach(([k, v]) => {
+
+      // Split out image to optionally compress
+      const { image, ...rest } = payload;
+
+      // Append non-file fields
+      Object.entries(rest).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== "") body.append(k, v);
       });
 
       // Require image on CREATE if your model needs it
-      if (!isEdit && !payload.image) {
+      if (!isEdit && !image) {
         setSubmitError("Please select an image.");
         setSaving(false);
         return;
       }
 
-      // For PUT when no new image chosen, reuse the existing image
-      if (isEdit && !payload.image && editing?.image) {
+      // If user selected a new image, compress it before append
+      if (image) {
+        const original = image;
+        const compressed = await compressImage(original); // 👈 compression
+        console.log(
+          "[Programs] original:",
+          (original.size / 1024 / 1024).toFixed(2),
+          "MB → compressed:",
+          (compressed.size / 1024).toFixed(0),
+          "KB",
+          compressed.name
+        );
+        body.append("image", compressed);
+      } else if (isEdit && editing?.image) {
+        // For PUT when no new image chosen, reuse the existing image from server
         const existingFile = await fetchExistingImageFile(editing.image);
         if (existingFile) body.append("image", existingFile);
       }

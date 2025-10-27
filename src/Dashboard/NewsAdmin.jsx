@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { useApiQuery } from "../api/hooks";
 import { ENDPOINTS, ABS } from "../api/endpoints";
+import { compressImage } from "../utils/compressImage.js"; // 👈 add compression
 
 /* ============================== helpers ============================== */
 
@@ -92,7 +93,7 @@ export default function NewsAdmin() {
     }
   };
 
-  // CREATE / UPDATE
+  // CREATE / UPDATE (with image compression)
   const handleSubmit = async (payload) => {
     setSaving(true);
     setSubmitError("");
@@ -103,15 +104,33 @@ export default function NewsAdmin() {
         : ABS(ENDPOINTS.newsManage);
 
       const body = new FormData();
-      // Only append defined fields
-      Object.entries(payload).forEach(([k, v]) => {
+
+      // Append text fields first
+      const { image, ...rest } = payload;
+      Object.entries(rest).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== "") body.append(k, v);
       });
 
-      if (!isEdit && !payload.image) {
+      // Image required on CREATE (adjust if your model allows null)
+      if (!isEdit && !image) {
         setSubmitError("Please select an image.");
         setSaving(false);
         return;
+      }
+
+      // If an image is provided, compress it before appending
+      if (image) {
+        const original = image;
+        const compressed = await compressImage(original); // 👈 compress
+        console.log(
+          "[News] original:",
+          (original.size / 1024 / 1024).toFixed(2),
+          "MB → compressed:",
+          (compressed.size / 1024).toFixed(0),
+          "KB",
+          compressed.name
+        );
+        body.append("image", compressed);
       }
 
       const res = await fetch(url, {
@@ -234,7 +253,7 @@ function NewsModal({ initial, onClose, onSubmit, saving, error }) {
   // 🔧 Use body (NOT content)
   const [title, setTitle] = useState(initial?.title || "");
   const [tag, setTag] = useState(initial?.tag || "");
-  const [body, setBody] = useState(initial?.body || ""); // <-- fixed
+  const [body, setBody] = useState(initial?.body || "");
   const [publishedAt, setPublishedAt] = useState(initial?.published_at || initial?.date || "");
   const [isActive, setIsActive] = useState(Boolean(initial?.is_active));
   const [previewUrl, setPreviewUrl] = useState(fileUrl(initial?.image) || "");
@@ -255,7 +274,7 @@ function NewsModal({ initial, onClose, onSubmit, saving, error }) {
     const payload = {
       title,
       tag,
-      body,                 // <-- send as body
+      body,                 // send as body
       published_at: publishedAt,
       is_active: isActive,
     };

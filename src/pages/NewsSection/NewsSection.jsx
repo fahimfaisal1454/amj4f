@@ -1,13 +1,15 @@
 // src/pages/NewsSection/NewsSection.jsx
 import React from "react";
-import { Link, useParams, useLocation } from "react-router-dom";
+import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import { ABS } from "../../api/endpoints"; // ← use shared absolute-URL helper
+
+const FALLBACK_IMG = new URL("../../assets/news/placeholder.jpg", import.meta.url).href;
 
 const fileUrl = (p) => (!p ? "" : ABS(p));
 
 const TAG_COLOR = "#74B93D";   // tag & button color (green)
 const DIVIDER   = "#74B93D";   // thin line under image
-const BANNER    = "#74B93D";   // light green header 
+const BANNER    = "#74B93D";   // light green header
 
 /* --------------------------- helpers --------------------------- */
 const toTS = (n) => {
@@ -32,12 +34,51 @@ const stripHtml = (html) => {
   return (div.textContent || div.innerText || "").replace(/\s+/g, " ").trim();
 };
 
+/* ---------- scroll/visibility state keys for list restoration ---------- */
+const NEWS_SCROLL_KEY = "news:list:scrollY";
+const NEWS_VISIBLE_KEY = "news:list:visible";
+
+function saveNewsScroll() {
+  try {
+    sessionStorage.setItem(NEWS_SCROLL_KEY, String(window.scrollY || 0));
+  } catch {}
+}
+function saveNewsVisible(v) {
+  try {
+    sessionStorage.setItem(NEWS_VISIBLE_KEY, String(v));
+  } catch {}
+}
+// ✅ Restore EXACT saved scrollY (no header offset subtraction). Wait for images.
+async function restoreNewsScrollAfterImages() {
+  try {
+    const raw = sessionStorage.getItem(NEWS_SCROLL_KEY);
+    if (!raw) return;
+
+    const imgs = Array.from(document.querySelectorAll("#news-list img"));
+    await Promise.all(
+      imgs.map((img) =>
+        "decode" in img ? img.decode().catch(() => {}) : Promise.resolve()
+      )
+    );
+
+    sessionStorage.removeItem(NEWS_SCROLL_KEY);
+    const y = parseInt(raw, 10) || 0;
+    const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    window.scrollTo({
+      top: Math.max(0, y),
+      behavior: prefersReduce ? "auto" : "smooth",
+    });
+  } catch {}
+}
+
 /* ===============================================================
    Component: list + detail (same file, routed by /news and /news/:id)
    =============================================================== */
 export default function NewsSection() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   /* ---------------------- DETAIL VIEW ---------------------- */
   if (id) {
@@ -86,6 +127,15 @@ export default function NewsSection() {
       return () => (cancel = true);
     }, [id, passedNews]);
 
+    const handleBack = () => {
+      // Prefer history back if we arrived from the list; otherwise go to /news
+      if (location.state?.news || location.state?.fromList) {
+        navigate(-1);
+      } else {
+        navigate("/news");
+      }
+    };
+
     if (loading || !news) {
       return <section className="py-14 text-center text-sm text-gray-600">Loading…</section>;
     }
@@ -96,6 +146,11 @@ export default function NewsSection() {
         <div className="absolute inset-0 opacity-10 -z-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
 
         <div className="relative max-w-4xl mx-auto px-4">
+          {/* Back control */}
+          <button onClick={handleBack} className="text-sm font-semibold hover:underline mb-4" style={{ color: TAG_COLOR }}>
+            ← Back to News
+          </button>
+
           {/* meta row */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex flex-wrap gap-2">
@@ -120,7 +175,8 @@ export default function NewsSection() {
                 src={(news.gallery && news.gallery[0]) || news.image}
                 alt={news.title}
                 className="w-full max-h-[420px] object-cover"
-                onError={(e) => (e.currentTarget.src = "/src/assets/news/placeholder.jpg")}
+                onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
+                decoding="async"
               />
               <div className="h-[4px] w-full" style={{ backgroundColor: DIVIDER }} />
             </div>
@@ -130,16 +186,6 @@ export default function NewsSection() {
           <article className="mt-5 prose max-w-none leading-7 text-justify prose-p:my-4 prose-a:underline">
             <div dangerouslySetInnerHTML={{ __html: news.bodyHtml }} />
           </article>
-
-          <div className="mt-8">
-            <Link
-              to="/"
-              className="text-sm font-semibold hover:underline"
-              style={{ color: TAG_COLOR }}
-            >
-              ← Back to News
-            </Link>
-          </div>
         </div>
       </section>
     );
@@ -148,6 +194,17 @@ export default function NewsSection() {
   /* ---------------------- LIST VIEW ---------------------- */
   const [items, setItems] = React.useState([]);
   const [visible, setVisible] = React.useState(9);
+
+  // Restore "visible" count first (so the same number of cards are shown after Back)
+  React.useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(NEWS_VISIBLE_KEY);
+      if (raw) {
+        const v = parseInt(raw, 10);
+        if (!Number.isNaN(v) && v > 0) setVisible(v);
+      }
+    } catch {}
+  }, []);
 
   React.useEffect(() => {
     fetch(ABS(`/api/news/`))
@@ -186,9 +243,21 @@ export default function NewsSection() {
       .catch((e) => console.error("Failed to fetch news:", e));
   }, []);
 
+  // After items render, restore EXACT scroll (no header offset) after images decode
+  React.useEffect(() => {
+    if (items.length === 0) return;
+    restoreNewsScrollAfterImages();
+  }, [items.length]);
+
+  // Save list state (scroll + visible) before navigating to a detail page
+  const saveListState = React.useCallback(() => {
+    saveNewsScroll();
+    saveNewsVisible(visible);
+  }, [visible]);
+
   return (
     <section className="relative pb-10">
-      {/* === MAGENTA BANNER WITH NOTCH (like your screenshot) === */}
+      {/* === GREEN BANNER WITH NOTCH (like your screenshot) === */}
       <div className="relative">
         <div
           className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide py-6 text-center"
@@ -205,7 +274,7 @@ export default function NewsSection() {
       {/* dotted background area under banner */}
       <div className="absolute inset-0 top-[56px] opacity-10 -z-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
 
-      <div className="relative max-w-6xl mx-auto px-4 pt-8">
+      <div id="news-list" className="relative max-w-6xl mx-auto px-4 pt-8">
         {/* grid 1→2→3 cols */}
         {items.length === 0 ? (
           <p className="mt-10 text-center text-black/70">No news available.</p>
@@ -213,7 +282,9 @@ export default function NewsSection() {
           <>
             <div className="mt-2 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
               {items.slice(0, visible).map((n) => {
-                const cover = n.image || n.gallery[0] || "/src/assets/news/placeholder.jpg";
+                const cover = n.image || n.gallery[0] || FALLBACK_IMG;
+                const to = `/news/${encodeURIComponent(n.id)}`;
+                const linkState = { news: n, fromList: true };
                 return (
                   <article
                     key={n.id}
@@ -221,15 +292,18 @@ export default function NewsSection() {
                   >
                     {/* Image + divider */}
                     <Link
-                      to={`/news/${encodeURIComponent(n.id)}`}
-                      state={{ news: n }}
+                      to={to}
+                      state={linkState}
+                      onClick={saveListState}
                       className="block relative overflow-hidden"
                     >
                       <img
                         src={cover}
                         alt={n.title}
                         className="block h-[180px] w-full object-cover"
-                        onError={(e) => (e.currentTarget.src = "/src/assets/news/placeholder.jpg")}
+                        onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="h-[4px] w-full" style={{ backgroundColor: DIVIDER }} />
                     </Link>
@@ -245,8 +319,9 @@ export default function NewsSection() {
                     {/* Title */}
                     <div className="px-3 pb-4">
                       <Link
-                        to={`/news/${encodeURIComponent(n.id)}`}
-                        state={{ news: n }}
+                        to={to}
+                        state={linkState}
+                        onClick={saveListState}
                         className="mt-1 block text-[1.15rem] leading-snug font-semibold text-[#1b1b1b] hover:underline"
                       >
                         {n.title}
