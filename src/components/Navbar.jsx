@@ -1,5 +1,6 @@
 // src/components/Navbar.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import logo from "../assets/logo.jpg"; // ✅ import asset so it works after build
 
 const TOKEN_KEY = import.meta.env.VITE_TOKEN_STORAGE_KEY || "aj_tokens";
 
@@ -28,7 +29,8 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    // Clear all possible auth tokens
+    const { location } = window;
+
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem("token");
     localStorage.removeItem("access");
@@ -36,9 +38,8 @@ export default function Navbar() {
 
     setAuthed(false);
 
-    // If user is on /dashboard or another protected route, send them home
     if (location.pathname.startsWith("/dashboard")) {
-      window.location.assign("/");
+      location.assign("/");
     } else {
       const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       window.scrollTo({ top: 0, behavior: prefersReduce ? "auto" : "smooth" });
@@ -77,42 +78,36 @@ export default function Navbar() {
     window.scrollTo({ top: y, behavior: prefersReduce ? "auto" : "smooth" });
 
     if (writeHash) {
-      // write the hash so Back returns to the section (/#events)
       try {
         history.replaceState(history.state, "", href);
       } catch {}
     }
   }
 
-  // --- smooth scroll (works with fixed header + respects reduced motion)
+  // --- smooth scroll
   const handleNavClick = (e, href) => {
-    if (!href?.startsWith("#")) return; // external link, ignore
+    if (!href?.startsWith("#")) return; // external link
     e.preventDefault();
 
-    // If we're not on the homepage layout, just go there with the hash
+    const { location } = window;
     if (location.pathname !== "/") {
-      window.location.assign("/" + href); // ensures URL has the hash
+      location.assign("/" + href);
       return;
     }
 
-    // On homepage: smooth scroll & write the hash into the URL
     scrollToHash(href, { writeHash: true });
     setMobileOpen(false);
   };
 
-  // Normalize hash-based navigation (initial load and on Back/Forward)
+  // Normalize deep links and Back/Forward for hashes
   useEffect(() => {
     const onHashChange = () => {
+      const { location } = window;
       if (location.pathname === "/" && location.hash) {
-        // Scroll with header offset when hash changes (e.g., Back to #events)
-        // Use rAF so layout is ready.
-        requestAnimationFrame(() => scrollToHash(location.hash, { writeHash: false }));
+        requestAnimationFrame(() => scrollToHash(location.hash));
       }
     };
-
-    // Run once on mount (deep-link like /#events)
-    onHashChange();
-    // Then listen for hash changes
+    onHashChange(); // for direct /#section loads
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
@@ -131,12 +126,14 @@ export default function Navbar() {
             <div className="absolute inset-0 bg-lime-400/30 rounded-full blur-md group-hover:blur-lg transition-all duration-300" />
             <img
               className="relative h-14 w-14 rounded-full border-2 border-lime-400 transform group-hover:scale-110 transition-transform duration-300"
-              src="/src/assets/logo.jpg"
+              src={logo}               // ✅ works in dev & prod
               alt="Logo"
               onError={(e) => (e.currentTarget.style.display = "none")}
+              loading="eager"
+              decoding="async"
             />
           </div>
-          <span className="text-2xl font-bold bg-gradient-to-r bg-[#309930] bg-clip-text text-transparent whitespace-nowrap">
+          <span className="text-2xl font-bold bg-gradient-to-r from-[#309930] to-[#309930] bg-clip-text text-transparent whitespace-nowrap">
             Amar Jashore
           </span>
         </a>
@@ -168,7 +165,6 @@ export default function Navbar() {
             </a>
           ) : (
             <>
-              {/* ✅ Fixed link here */}
               <a
                 href="/dashboard"
                 className="relative overflow-hidden rounded-full bg-[#43850d] px-6 py-2 text-sm font-bold text-white shadow-lg hover:shadow-blue-500/30 transform hover:scale-105 transition-all duration-300 group"
@@ -233,7 +229,6 @@ export default function Navbar() {
               </a>
             ) : (
               <>
-                {/* ✅ Fixed link here */}
                 <a
                   href="/dashboard"
                   onClick={() => setMobileOpen(false)}
