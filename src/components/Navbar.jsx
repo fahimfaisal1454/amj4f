@@ -131,12 +131,12 @@ export default function Navbar() {
             <div className="absolute inset-0 bg-lime-400/30 rounded-full blur-md group-hover:blur-lg transition-all duration-300" />
             <img
               className="relative h-14 w-14 rounded-full border-2 border-lime-400 transform group-hover:scale-110 transition-transform duration-300"
-              src="/src/assets/logo.png"
+              src="/src/assets/logo.jpg"
               alt="Logo"
               onError={(e) => (e.currentTarget.style.display = "none")}
             />
           </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-green-500 to-green-500 bg-clip-text text-transparent whitespace-nowrap">
+          <span className="text-2xl font-bold bg-gradient-to-r bg-[#309930] bg-clip-text text-transparent whitespace-nowrap">
             Amar Jashore
           </span>
         </a>
