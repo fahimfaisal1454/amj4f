@@ -92,11 +92,11 @@ export default function Footer() {
             </li>
             <li className="flex items-center gap-2">
               <Phone className={`${FOOTER_STYLE.iconSize} text-lime-400`} />{" "}
-              +880 1234-567-89
+              +880 1715488288
             </li>
             <li className="flex items-center gap-2">
               <Mail className={`${FOOTER_STYLE.iconSize} text-lime-400`} />{" "}
-              info@amarjashore.org
+              amarjashore@gmail.com
             </li>
           </ul>
         </div>
@@ -127,9 +127,17 @@ export default function Footer() {
       <div className="relative border-t border-lime-400/20 text-[12.5px] text-center py-3 text-gray-300 bg-black/70 backdrop-blur-sm">
         © {new Date().getFullYear()}{" "}
         <span className="font-semibold bg-gradient-to-r from-lime-300 to-green-400 bg-clip-text text-transparent">
-          Amar Jashore NGO
+          Amar Jashore 
         </span>
-        . All rights reserved.
+        . All rights reserved. Powered by{' '}
+        <a
+          href="https://utshabtechnology.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-gray-700 hover:text-lime-400"
+        >
+          Utshab Technology Ltd.
+        </a>
       </div>
     </footer>
   );

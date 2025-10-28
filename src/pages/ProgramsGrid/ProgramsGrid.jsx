@@ -1,16 +1,16 @@
 // src/pages/ProgramsGrid/ProgramsGrid.jsx
 import React from "react";
-import { ABS } from "../../api/endpoints"; // ← use shared absolute-URL helper
+import { ABS } from "../../api/endpoints";
 
 const fileUrl = (p) => (!p ? "" : ABS(p));
-// ✅ robust fallback path that works in dev & build
 const FALLBACK = new URL("../../assets/news/placeholder.jpg", import.meta.url).href;
 
 // THEME
-const HEADER = "#74B93D"; // green banner
-const HIGHLIGHT = "#C5FB5A"; // lime accent
+const HEADER = "#74B93D";   // green banner
+const ACCENT = "#C5FB5A";   // lime accent
+const DARK = "#163e1e";     // deep green for text accents
 
-const MODAL_STATE_KEY = "programs:modal"; // marker we push into history.state
+const MODAL_STATE_KEY = "programs:modal";
 
 export default function ProgramsGrid() {
   const [programs, setPrograms] = React.useState([]);
@@ -36,27 +36,17 @@ export default function ProgramsGrid() {
           }));
         setPrograms(mapped);
       })
-      .catch((e) => {
-        console.error("Failed to fetch programs:", e);
-        setPrograms([]);
-      });
+      .catch(() => setPrograms([]));
   }, []);
 
-  // Close modal on ESC, but integrate with history so Back works consistently
   React.useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape" && active) {
-        safeCloseModal();
-      }
-    };
+    const onKey = (e) => e.key === "Escape" && active && safeCloseModal();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [active]);
 
-  // When opening the modal, push a history state; Back will close it.
   const openModal = (p) => {
     try {
-      // Only push a marker if it isn't already the current state
       if (!(history.state && history.state[MODAL_STATE_KEY])) {
         history.pushState({ ...(history.state || {}), [MODAL_STATE_KEY]: true }, "");
       }
@@ -64,24 +54,15 @@ export default function ProgramsGrid() {
     setActive(p);
   };
 
-  // Close modal and pop the marker state if present
   const safeCloseModal = () => {
     setActive(null);
     try {
-      if (history.state && history.state[MODAL_STATE_KEY]) {
-        history.back(); // pop just the marker we pushed
-      }
+      if (history.state && history.state[MODAL_STATE_KEY]) history.back();
     } catch {}
   };
 
-  // Listen for Back/Forward: if our marker is popped, close the modal.
   React.useEffect(() => {
-    const onPop = () => {
-      // If user pressed Back and modal was open, close it instead of navigating away
-      if (active) {
-        setActive(null);
-      }
-    };
+    const onPop = () => active && setActive(null);
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [active]);
@@ -89,20 +70,15 @@ export default function ProgramsGrid() {
   return (
     <section
       id="programs"
-      className="relative scroll-mt-[72px] min-h-screen flex flex-col justify-start pb-20 overflow-hidden"
-      style={{
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
+      className="relative scroll-mt-[72px] min-h-screen pb-20"
     >
-      {/* === HEADER BANNER (like “NUMBERS”) === */}
+      {/* Header */}
       <div className="relative">
         <div
           className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide py-6 text-center"
           style={{ background: HEADER }}
         >
-          OUR PROGRAMS
+          OUR ACTIVITIES
         </div>
         <div
           className="absolute left-1/2 -translate-x-1/2 w-8 h-8 rotate-45"
@@ -110,43 +86,77 @@ export default function ProgramsGrid() {
         />
       </div>
 
-      {/* Soft veil + dotted pattern */}
-      <div className="absolute inset-0 bg-white/40 -z-10" />
-      <div className="absolute inset-0 opacity-10 -z-10 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.10)_1px,transparent_0)] [background-size:18px_18px]" />
+      {/* Soft background pattern */}
+      <div className="absolute inset-0 -z-10 bg-white/70" />
+      <div className="absolute inset-0 -z-10 opacity-[0.08] bg-[radial-gradient(circle_at_1px_1px,#1b1b1b_1px,transparent_0)] [background-size:18px_18px]" />
 
       {/* Content */}
       <div className="relative max-w-container mx-auto px-4 mt-16">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
           {programs.map((p, i) => (
             <article
               key={`${p.title}-${i}`}
               onClick={() => openModal(p)}
-              className="flex cursor-pointer flex-col overflow-hidden rounded-xl pg-card hover:-translate-y-1 transition-all"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white border border-[#e7f4da] shadow-[0_8px_26px_rgba(23,57,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_46px_rgba(23,57,0,0.14)]"
             >
-              <img
-                src={p.image || FALLBACK}
-                alt={p.title}
-                className="h-48 w-full object-cover"
-                onError={(e) => (e.currentTarget.src = FALLBACK)}
-                loading="lazy"
-                decoding="async"
+              {/* Vertical accent bar (unique to Programs) */}
+              <span
+                aria-hidden
+                className="absolute left-0 top-0 h-full w-[6px]"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #74B93D 0%, #C5FB5A 100%)",
+                }}
               />
-              <div className="flex-1 px-5 pt-4 pb-6 border-t border-[#C5FB5A]">
+
+              {/* Image */}
+              <div className="relative">
+                <img
+                  src={p.image || FALLBACK}
+                  alt={p.title}
+                  className="h-48 w-full object-cover"
+                  onError={(e) => (e.currentTarget.src = FALLBACK)}
+                  loading="lazy"
+                  decoding="async"
+                />
+                {/* Tag ribbon over image */}
                 <span
-                  className={`inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${p.tagColor}`}
+                  className={`absolute left-4 top-4 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider shadow-sm ${p.tagColor}`}
                 >
                   {p.tag}
                 </span>
-                <h3 className="mt-3 text-[1.1rem] leading-snug font-semibold text-white">
+              </div>
+
+              {/* Body */}
+              <div className="px-5 pt-4 pb-5">
+                <h3 className="text-lg font-bold text-[#1a1a1a]">
                   {p.title}
                 </h3>
-                <p className="mt-2 text-[0.95rem] text-white/90 leading-relaxed">
-                  {p.desc}
-                </p>
-                <div className="mt-3">
-                  <span className="inline-flex items-center text-sm font-semibold text-white/90 hover:underline">
-                    Read more →
-                  </span>
+                {p.desc && (
+                  <p className="mt-2 text-[0.95rem] leading-relaxed text-[#4b4b4b] line-clamp-3">
+                    {p.desc}
+                  </p>
+                )}
+
+                <div className="mt-4 flex items-center justify-between">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#d8efbd] bg-[#f8fff0] px-4 py-2 text-sm font-semibold text-[#2a4b1f] transition group-hover:bg-[#ecffd1]"
+                  >
+                    Explore program
+                    <span
+                      className="transition-transform group-hover:translate-x-0.5"
+                      style={{ color: DARK }}
+                    >
+                      →
+                    </span>
+                  </button>
+
+                  {/* tiny accent dot */}
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: ACCENT }}
+                  />
                 </div>
               </div>
             </article>
@@ -154,7 +164,7 @@ export default function ProgramsGrid() {
         </div>
       </div>
 
-      {/* Modal (details) */}
+      {/* Modal */}
       {active && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
@@ -163,10 +173,9 @@ export default function ProgramsGrid() {
           aria-modal="true"
         >
           <div
-            className="w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl"
+            className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header image */}
             <div className="relative h-56 w-full">
               <img
                 src={active.image || FALLBACK}
@@ -175,7 +184,7 @@ export default function ProgramsGrid() {
                 onError={(e) => (e.currentTarget.src = FALLBACK)}
                 decoding="async"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-black/10" />
               <div className="absolute bottom-4 left-4 right-4">
                 <span
                   className={`inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider ${active.tagColor}`}
@@ -195,52 +204,30 @@ export default function ProgramsGrid() {
               </button>
             </div>
 
-            {/* Body */}
-            <div className="px-5 py-4">
-              <p className="text-[0.95rem] leading-relaxed text-[#363636]">
+            <div className="px-5 py-5">
+              <p className="text-[0.98rem] leading-relaxed text-[#2f2f2f] whitespace-pre-line">
                 {active.body || active.desc}
               </p>
 
-              <div className="mt-5 flex items-center justify-between">
-                <span className="text-xs text-[#777]">
-                  Press <kbd className="rounded bg-[#eee] px-1 py-[2px]">Esc</kbd> or hit Back to close
-                </span>
+              <div className="mt-6 flex items-center justify-end gap-3">
                 <button
-                  className="rounded-full px-4 py-2 text-sm font-semibold transition shadow-[0_6px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)]"
-                  style={{ backgroundColor: HIGHLIGHT, color: "black" }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "black";
-                    e.currentTarget.style.color = HIGHLIGHT;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = HIGHLIGHT;
-                    e.currentTarget.style.color = "black";
-                  }}
                   onClick={safeCloseModal}
+                  className="rounded-full border border-[#e6f4d7] bg-white px-4 py-2 text-sm font-semibold text-[#2e2e2e] hover:bg-[#f6ffea]"
                 >
                   Close
                 </button>
+                <a
+                  href="#contact"
+                  className="rounded-full px-4 py-2 text-sm font-semibold"
+                  style={{ background: ACCENT, color: "#111" }}
+                >
+                  Get involved
+                </a>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Solid green card style (same as AboutUs/News) */}
-      <style>{`
-        .pg-card{
-          background-color: #74B93D;             /* solid green */
-          border: 2px solid #C5FB5A;             /* lime border */
-          box-shadow:
-            0 12px 28px rgba(0,0,0,0.15),
-            inset 0 1px 0 rgba(255,255,255,0.25);
-        }
-        .pg-card:hover{
-          box-shadow:
-            0 18px 46px rgba(0,0,0,0.20),
-            0 0 0 4px rgba(197,251,90,0.28);     /* soft lime aura */
-        }
-      `}</style>
     </section>
   );
 }
