@@ -131,7 +131,7 @@ export default function Footer() {
         </span>
         . All rights reserved. Powered by{' '}
         <a
-          href="https://utshabtechnology.com"
+          href="https://utshabtech.com.bd/"
           target="_blank"
           rel="noopener noreferrer"
           className="font-semibold text-gray-700 hover:text-lime-400"
